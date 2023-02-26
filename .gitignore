@@ -129,4 +129,4 @@ dmypy.json
 .pyre/
 
 # Blender 1 files
-.blend1
+*.blend?
