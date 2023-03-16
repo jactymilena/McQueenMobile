@@ -16,7 +16,6 @@ RIGHT = 0
 LEFT = 1
 
 
-
 def frames_to_seconds(frames):
     # 24 frames per second
     return frames/24
@@ -25,6 +24,7 @@ def frames_to_seconds(frames):
 def toggle_axe(curr_axe):
     return Y_AXE if curr_axe == X_AXE else X_AXE
 
+
 def toggle_direction(curr_dir):
     return -1 if curr_dir == 1 else 1
 
@@ -32,11 +32,8 @@ def toggle_direction(curr_dir):
 def rotate(obj, axe, angle, keyframe):
     obj.rotation_euler[axe] += angle
     obj.keyframe_insert(data_path="rotation_euler", frame=keyframe)
-    
-    
-#def turn(direction):
-    
 
+    
 def move(obj, dist, axe, direction, keyframe):
     new_pos = obj.location 
     new_pos[axe] += dist*direction
@@ -63,7 +60,6 @@ def avoid_obstacle(obstacle, sensor, move_dist, front_axe) -> bool:
     sides_dist = np.abs(sensor_pos[sides_axe] - obs_pos[sides_axe])
 
     if check_direction(sensor, obstacle, front_axe) and sides_dist <= SENSOR_SIDES_RANGE:
-        print(f"front_dist {front_dist} sides_dist {sides_dist}")
         
         if front_dist <= SENSOR_CLOSE_RANGE:
             return BACKWARDS_FLAG
@@ -90,7 +86,6 @@ if __name__ == '__main__':
     second_avoidance_turn = -1
     last_avoidance_turn = -1
     direction = 1
-#    move(car_obj, 0, front_axe, curr_frame)
     
     while True:
         rotate(car_obj, rotation_axe, 0, curr_frame)
@@ -102,31 +97,28 @@ if __name__ == '__main__':
         
         if avoid_flag == BACKWARDS_FLAG:
             # Obstacle detected too close, move backwards
-            print("obstacle detected BACKWARDS_FLAG" + str(curr_frame))
             move(car_obj, -move_dist, front_axe, direction, curr_frame)
             
         elif avoid_flag == TURN_FLAG:  
             # Obstacle detected, turn right         
-            print("obstacle detected TURN_FLAG" + str(curr_frame))
             rotate(car_obj, rotation_axe, -np.pi/2, curr_frame)
             front_axe = toggle_axe(front_axe)
             
-#            end_avoidance = (5 * move_dist) + count
             first_avoidance_turn = (5 * move_dist) + count
             second_avoidance_turn = (20 * move_dist) + first_avoidance_turn
             last_avoidance_turn = (5 * move_dist) + second_avoidance_turn
             
         elif first_avoidance_turn == count:
-            # Enf of obstacle avoidance, turn right
+            # Obstacle avoidance, turn left
             rotate(car_obj, rotation_axe, np.pi/2, curr_frame)
             front_axe = toggle_axe(front_axe)
         elif second_avoidance_turn == count:
-            # Enf of obstacle avoidance, turn left
+            # Obstacle avoidance, turn left
             rotate(car_obj, rotation_axe, np.pi/2, curr_frame)
             front_axe = toggle_axe(front_axe)
             direction = toggle_direction(direction)
         elif last_avoidance_turn == count:
-            # Enf of obstacle avoidance, turn left
+            # End of obstacle avoidance, turn right
             rotate(car_obj, rotation_axe, -np.pi/2, curr_frame)
             front_axe = toggle_axe(front_axe)
             direction = toggle_direction(direction)
@@ -142,7 +134,3 @@ if __name__ == '__main__':
         if count > 120:
             # Trajectory end
             break
-
-# TODO: verifier si l'obstacle est en x et en y
-# TODO: code pour plusieurs obstacles
-# TODO: Mettre ca en classes et tester plusieurs fichiers sur blender
