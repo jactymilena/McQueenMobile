@@ -32,16 +32,23 @@ def move(obj, dist, axe, keyframe):
     new_pos[axe] += dist
     obj.location = new_pos[:]
     obj.keyframe_insert(data_path="location", frame=keyframe)
+    
+
+def get_child_obj_location(obj):
+    return obj.matrix_world.to_translation()
 
 
 def check_direction(obj, obs, front_axe):
-    return obs.location[front_axe] > obj.location[front_axe] 
+    print(f"obs {obs.location[front_axe]} obj {obj.matrix_world.to_translation()[front_axe]} front_axe {front_axe}")
+    return obs.location[front_axe] > get_child_obj_location(obj)[front_axe] 
     
 
 def avoid_obstacle(obstacle, sensor, move_dist, front_axe) -> bool:
-    sensor_pos = sensor.matrix_world.to_translation()
+    sensor_pos = get_child_obj_location(sensor)
     sensor_pos[front_axe] += move_dist
     dist_from_obs = (sensor_pos - obstacle.location).length
+#    front_dist = 
+#    sides_dist
     
     if check_direction(sensor, obstacle, front_axe):
         print(f"distance {dist_from_obs}")
@@ -51,11 +58,7 @@ def avoid_obstacle(obstacle, sensor, move_dist, front_axe) -> bool:
             return TURN_FLAG
         else:
             return OTHER_FLAG
-    
-#    dist_from_obs <= sensor_range and check_direction(sensor, obstacle, front_axe)
-#    
-#    return dist_from_obs <= sensor_range and check_direction(sensor, obstacle, front_axe)
-
+ 
 
 if __name__ == '__main__':
     car_obj = bpy.data.objects["car"]
@@ -64,13 +67,13 @@ if __name__ == '__main__':
     sensor_left = bpy.data.objects["sensor_l"]
     
     move_dist = 2
-    i = 1
+    count = 0
     front_axe = Y_AXE
     rotation_axe = 2
     frame_rate = 2
     curr_frame = 0
+    end_avoidance = -1
     
-#    rotate(car_obj, rotation_axe, 0, curr_frame)
     move(car_obj, 0, front_axe, curr_frame)
     
     while True:
@@ -89,30 +92,22 @@ if __name__ == '__main__':
             print("obstacle detected TURN_FLAG" + str(curr_frame))
             rotate(car_obj, rotation_axe, -np.pi/2, curr_frame)
             front_axe = toggle_direction(front_axe)
-
-#        if avoid_obstacle(obs_obj, sensor_right, move_dist, front_axe):
-#            print("obstacle detected " + str(curr_frame))
-#            rotate(car_obj, rotation_axe, -np.pi/2, curr_frame)
-#            front_axe = toggle_direction(front_axe)
-
-#            move(car_obj, move_dist, front_axe, curr_frame)
-
-#            rotate(car_obj, rotation_axe, np.pi/2, curr_frame)
-#            front_axe = toggle_direction(front_axe)
+            
+            end_avoidance = (5 * move_dist) + count
+            
+        elif end_avoidance == count:
+            rotate(car_obj, rotation_axe, np.pi/2, curr_frame)
+            front_axe = toggle_direction(front_axe)
         else:
             move(car_obj, move_dist, front_axe, curr_frame)
-            
-            
 
         curr_frame += frame_rate 
 
-        i += 1
+        count += 1
         
-        if i > 120:
+        if count > 120:
             break
 
 # TODO: verifier si l'obstacle est en x et en y
-# TODO: aller chercher le code picar pour la logique
 # TODO: code pour plusieurs obstacles
 # TODO: Mettre ca en classes et tester plusieurs fichiers sur blender
-# TODO: Ajouter la notion de vitesse lors des mouvements dans les ifs
