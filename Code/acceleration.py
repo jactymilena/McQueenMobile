@@ -44,7 +44,7 @@ if __name__ == '__main__':
         i += 1
         
         if i == 20:
-            goal_speed  = curr_speed * 4
+            goal_speed  = curr_speed *4
             acceleration = accelerate(curr_speed, goal_speed)
             is_acc = True
             acc_rate  = acceleration * frames_to_seconds(frame_rate)
