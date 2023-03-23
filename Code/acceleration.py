@@ -2,10 +2,6 @@ import bpy
 import math
   
 
-def move(obj, new_pos, keyframe):
-    obj.location = new_pos[:]
-    obj.keyframe_insert(data_path="location", frame=keyframe, index=-1)
-
 def accelerate(curr_speed, goal_speed):
     factor = 1/5
     acc = (goal_speed - curr_speed) * factor
@@ -19,6 +15,12 @@ def speed(frames, move_dist):
 def frames_to_seconds(frames):
     # 24 frames per second
     return frames/24
+
+def move(obj, dist, axe, direction, keyframe):
+    new_pos = obj.location 
+    new_pos[axe] += dist*direction
+    obj.location = new_pos[:]
+    obj.keyframe_insert(data_path="location", frame=keyframe)
 
 if __name__ == '__main__':
     
@@ -36,9 +38,7 @@ if __name__ == '__main__':
 
     while True:
         bpy.context.scene.frame_set(curr_frame)
-        curr_pos = car_obj.location 
-        curr_pos[front_axe] += move_dist
-        move(car_obj, curr_pos, curr_frame)
+        move(car_obj, move_dist, front_axe, 1, curr_frame)
         curr_frame += frame_rate 
         curr_speed = speed(frame_rate, move_dist)
         i += 1
