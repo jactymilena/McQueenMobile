@@ -10,5 +10,6 @@ front_axe = const.Y_AXE
 direction = 1
 
 c = car.Car()
-c.init_simulation("car", "obstacles", front_axe, direction)
-c.simulate(move_dist, frame_rate)
+c.test()
+# c.init_simulation("car", "obstacles", front_axe, direction)
+# c.simulate(move_dist, frame_rate)
