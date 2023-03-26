@@ -1,12 +1,9 @@
-# import bpy
 import numpy as np
-
 import bpy
 
 from sys import path
 path.append(r'C:\projets\McQueenMobile\Code')
 
-# import ultrasonic_avoidance as ua
 
 import constants as const
 import utils
@@ -40,10 +37,8 @@ class Ultrasonic_avoidance:
 
             if utils.check_obs_direction(self.right_sensor, obs, front_axe) and sides_dist <= const.SENSOR_SIDES_RANGE:
                 
-#                if math.isclose(front_dist, const.SENSOR_CLOSE_RANGE, 5):
                 if front_dist <= const.SENSOR_CLOSE_RANGE:
                     return const.BACKWARDS_FLAG
-#                elif math.isclose(front_dist, const.SENSOR_FAR_RANGE, 5):
                 elif front_dist <= const.SENSOR_FAR_RANGE:
                     return const.TURN_FLAG
 
@@ -75,7 +70,16 @@ class Car:
     def rotate(self, angle, keyframe):
         self.obj.rotation_euler[self.rotation_axe] += angle
         self.obj.keyframe_insert(data_path="rotation_euler", frame=keyframe)
+
+
+    def turn(self, keyframe, left=False):
+        angle = np.pi/2 if left else -np.pi/2
+        self.rotate(angle, keyframe)
         
+        if (self.front_axe == const.Y_AXE and left) or (self.front_axe == const.X_AXE and not left):
+            self.direction = utils.toggle_direction(self.direction)
+
+        self.front_axe = utils.toggle_axe(self.front_axe) 
 
 
     def simulate(self, move_dist, frame_rate):
@@ -89,14 +93,13 @@ class Car:
             avoid_flag = self.ultrasonic_sensor.avoid_obstacle(self.front_axe, move_dist)
 
             if avoid_flag == const.BACKWARDS_FLAG:
-                print("BACKWARDS")
                 # Obstacle detected too close, move backwards
+                print("BACKWARDS")
                 self.move(curr_frame, move_dist, True)
             elif avoid_flag == const.TURN_FLAG:
-                print("TURN")  
-                # Obstacle detected, turn right         
-                self.rotate(-np.pi/2, curr_frame)
-                self.front_axe = utils.toggle_axe(self.front_axe)  
+                # Obstacle detected, turn right   
+                print("TURN")        
+                self.turn(curr_frame)
             else:
                 self.move(curr_frame, move_dist)
 
@@ -106,27 +109,6 @@ class Car:
             if count > 120:
                 # Trajectory end (TODO add line follower check for end)
                 break
-            
-            
-#     def test(self):
-#         sensor_right = bpy.data.objects["sensor_r"]
-        
-#         move_dist = 2
-#         front_axe = 1
-#         i = 1
-#         frame_rate = 2
-#         curr_frame = 0
-        
-#         while True:
-# #            print(f"sensor right {sensor_right.location}")
-#             print(f"sensor matrix {sensor_right.matrix_world.to_translation()}")
-#             bpy.context.scene.frame_set(curr_frame)
-#             self.move(curr_frame, move_dist)
-#             curr_frame += frame_rate 
-#             i += 1
-            
-#             if i > 120:
-#                 break
 
 
 def main():
@@ -138,8 +120,6 @@ def main():
     c = Car()
     c.init_simulation("car", "obstacles", front_axe, direction)
     c.simulate(move_dist, frame_rate)
-#    c.test()
-
     
 
 if __name__ == '__main__':
