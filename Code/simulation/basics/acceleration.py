@@ -7,20 +7,24 @@ def accelerate(curr_speed, goal_speed):
     acc = (goal_speed - curr_speed) * factor
     return acc
 
+
 def speed(frames, move_dist):
     seconds = frames_to_seconds(frames)
     current_speed = move_dist / seconds
     return current_speed
 
+
 def frames_to_seconds(frames):
     # 24 frames per second
     return frames/24
+
 
 def move(obj, dist, axe, direction, keyframe):
     new_pos = obj.location 
     new_pos[axe] += dist*direction
     obj.location = new_pos[:]
     obj.keyframe_insert(data_path="location", frame=keyframe)
+
 
 if __name__ == '__main__':
     

@@ -52,6 +52,7 @@ def check_direction(obj, obs, front_axe):
 
 def avoid_obstacle(obstacle, sensor, move_dist, front_axe) -> bool:
     sensor_pos = get_child_obj_location(sensor)
+    print(f"sensor_pos {sensor_pos}")
     sensor_pos[front_axe] += move_dist
     obs_pos = obstacle.location
     

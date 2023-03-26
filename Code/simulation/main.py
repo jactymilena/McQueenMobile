@@ -56,7 +56,7 @@ class Car:
         self.rotation_axe = const.Z_AXE
         self.front_axe = front_axe
         self.direction = direction
-        self.ultrasonic_sensor = Ultrasonic_avoidance(obs_name)
+        self.ua = Ultrasonic_avoidance(obs_name)
 
 
     def move(self, keyframe, move_dist, backwards=False):
@@ -82,15 +82,26 @@ class Car:
         self.front_axe = utils.toggle_axe(self.front_axe) 
 
 
-    def simulate(self, move_dist, frame_rate):
+    def accelerate(curr_speed, goal_speed):
+        factor = 1/5
+        acc = (goal_speed - curr_speed) * factor
+        return acc
+
+
+    def speed(frames, move_dist):
+        seconds = utils.frames_to_seconds(frames)
+        current_speed = move_dist / seconds
+        return current_speed
+
+
+    def run(self, move_dist, frame_rate):
         curr_frame = 0
         count = 0
-
 
         while True:
             bpy.context.scene.frame_set(curr_frame)
             self.rotate(0, curr_frame)
-            avoid_flag = self.ultrasonic_sensor.avoid_obstacle(self.front_axe, move_dist)
+            avoid_flag = self.ua.avoid_obstacle(self.front_axe, move_dist)
 
             if avoid_flag == const.BACKWARDS_FLAG:
                 # Obstacle detected too close, move backwards
@@ -119,7 +130,7 @@ def main():
 
     c = Car()
     c.init_simulation("car", "obstacles", front_axe, direction)
-    c.simulate(move_dist, frame_rate)
+    c.run(move_dist, frame_rate)
     
 
 if __name__ == '__main__':
