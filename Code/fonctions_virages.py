@@ -100,9 +100,6 @@ def move(obj, dist, axe, direction, keyframe):
 
 if __name__ == '__main__':
     car_obj = bpy.data.objects["car"]
-    obs_obj = bpy.data.objects["obstacle"]
-    sensor_right = bpy.data.objects["sensor_r"]
-    sensor_left = bpy.data.objects["sensor_l"]
     
     vit_max = 0.297                     # m/s
     vit_max = vit_max * 100 / 24        # cm/frame
@@ -133,8 +130,3 @@ if __name__ == '__main__':
         i += 1        
         if i > 40:
             break
-
-# TODO: verifier si l'obstacle est en x et en y
-# TODO: aller chercher le code picar pour la logique
-# TODO: code pour plusieurs obstacles
-# TODO: Mettre ca en classes et tester plusieurs fichiers sur blender
