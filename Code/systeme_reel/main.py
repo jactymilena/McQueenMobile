@@ -8,7 +8,7 @@ import constants as const
 
 
 class Car:
-    def __init__(self) -> None:
+    def __init__(self):
         self.ua = Ultrasonic_Avoidance.Ultrasonic_Avoidance(20)
         self.fw = front_wheels.Front_Wheels(db='config')
         self.bw = back_wheels.Back_Wheels(db='config')
@@ -23,6 +23,8 @@ class Car:
         else:
             self.bw.forward()
             self.bw.speed = const.FORWARD_SPEED
+        time.sleep(1)
+        
 
     def turn(self, angle):
         self.fw.turn()
@@ -42,10 +44,11 @@ class Car:
                 # Obstacle detected too close, move backwards
                 print("BACKWARDS")
                 self.move(True)
+                break
             elif avoid_flag == const.TURN_FLAG:
                 # Obstacle detected, turn right   
                 print("TURN")        
-                self.turn(rand_dir())
+                self.turn(90)
             else:
                 print("MOVE")
                 self.move()
