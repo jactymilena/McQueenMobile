@@ -7,31 +7,41 @@ X_AXE = 0
 Y_AXE = 1
 Z_AXE = 2
 
+GAUCHE = 0
+DROITE = 1
+
 
 def toggle_axe(curr_axe):
     return Y_AXE if curr_axe == X_AXE else X_AXE
 
 def toggle_direction(curr_dir):
     return -1 if curr_dir == 1 else 1
-    
-    
-def virage_gauche(obj, axe1, angle, direction, keyframe, frame_rate, vit, rayon=12):
+
+
+def virage(obj, axe1, angle, direction, keyframe, frame_rate, vit, rayon=12):
+    virage = DROITE if angle<0 else GAUCHE
+
     angle = np.abs(angle)
     dist = angle * rayon
     frame_total = round(dist/vit)
     angle_delta = angle/frame_total
-
-    # rotation gauche
+    
+    # rotation
     obj.keyframe_insert(data_path="rotation_euler", frame=keyframe-frame_rate)
     old_rot = obj.rotation_euler
     rotation_array = []
     
     for i in range(frame_total):
         new_rot = copy.deepcopy(old_rot)
-        new_rot[Z_AXE] += (i+1)*angle_delta
+        
+        if virage == GAUCHE:
+            new_rot[Z_AXE] += (i+1)*angle_delta
+        else:
+            new_rot[Z_AXE] -= (i+1)*angle_delta
+
         rotation_array.append(new_rot)
-    
-    # déplacement gauche
+        
+    # déplacement
     axe2 = toggle_axe(axe1)
     old_pos = obj.location
     new_pos = copy.deepcopy(old_pos)
@@ -41,54 +51,18 @@ def virage_gauche(obj, axe1, angle, direction, keyframe, frame_rate, vit, rayon=
         x = np.cos((i+1)*angle_delta) * rayon
         y = np.sin((i+1)*angle_delta) * rayon
         
-        if axe1 == 1:
-            new_pos[axe1] = old_pos[axe1] + y*direction
+        new_pos[axe1] = old_pos[axe1] + y*direction
+        
+        if ((axe1 == Y_AXE) & (virage == GAUCHE)) | ((axe1 == X_AXE) & (virage == DROITE)):
             new_pos[axe2] = old_pos[axe2] - (rayon-x)*direction
+        
         else:
-            new_pos[axe1] = old_pos[axe1] + y*direction
             new_pos[axe2] = old_pos[axe2] + (rayon-x)*direction
 
         position_array.append(copy.deepcopy(new_pos))
             
     return position_array, rotation_array
 
-
-def virage_droite(obj, axe1, angle, direction, keyframe, frame_rate, vit, rayon=12):
-    angle = np.abs(angle)
-    dist = angle * rayon
-    frame_total = round(dist/vit)
-    angle_delta = angle/frame_total
-
-    # rotation droite
-    obj.keyframe_insert(data_path="rotation_euler", frame=keyframe-frame_rate)
-    old_rot = obj.rotation_euler
-    rotation_array = []
-    
-    for i in range(frame_total):
-        new_rot = copy.deepcopy(old_rot)
-        new_rot[Z_AXE] -= (i+1)*angle_delta
-        rotation_array.append(new_rot)      
-    
-    # déplacement droite
-    axe2 = toggle_axe(axe1)
-    old_pos = obj.location        
-    new_pos = copy.deepcopy(old_pos)
-    position_array = []
-
-    for i in range(int(frame_total)):
-        x = np.cos((i+1)*angle_delta) * rayon
-        y = np.sin((i+1)*angle_delta) * rayon
-        
-        if axe1 == 1:
-            new_pos[axe1] = old_pos[axe1] + y*direction
-            new_pos[axe2] = old_pos[axe2] + (rayon-x)*direction
-        else:
-            new_pos[axe1] = old_pos[axe1] + y*direction
-            new_pos[axe2] = old_pos[axe2] - (rayon-x)*direction        
-        
-        position_array.append(copy.deepcopy(new_pos))
-
-    return position_array, rotation_array
 
 
 def move(obj, dist, axe, direction, keyframe):
@@ -106,13 +80,13 @@ if __name__ == '__main__':
     i = 0
     frame_rate = 1
     curr_frame = 0
-    front_axe = Y_AXE
+    front_axe = X_AXE
     direction = -1
 
     while True:        
         if i==10:
             print('\nVirage')
-            virage, rotation = virage_gauche(car_obj, front_axe, np.pi/2, direction, curr_frame, frame_rate, vit_max)
+            virage, rotation = virage(car_obj, front_axe, -np.pi/2, direction, curr_frame, frame_rate, vit_max)
             
             for x in range(len(virage)):
                 car_obj.location = virage[x]
