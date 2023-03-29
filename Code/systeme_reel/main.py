@@ -1,4 +1,4 @@
-from SunFounder_Line_Follower import Line_Follower
+# from SunFounder_Line_Follower import Line_Follower
 from SunFounder_Ultrasonic_Avoidance import Ultrasonic_Avoidance
 from picar import front_wheels
 from picar import back_wheels
@@ -27,7 +27,7 @@ class Car:
         
 
     def turn(self, angle):
-        self.fw.turn()
+        self.fw.turn(angle)
         self.bw.forward()
         self.bw.speed = const.FORWARD_SPEED
         time.sleep(1)
@@ -44,6 +44,7 @@ class Car:
                 # Obstacle detected too close, move backwards
                 print("BACKWARDS")
                 self.move(True)
+                self.stop()
                 break
             elif avoid_flag == const.TURN_FLAG:
                 # Obstacle detected, turn right   
@@ -52,18 +53,31 @@ class Car:
             else:
                 print("MOVE")
                 self.move()
+                # self.fw.turn_straight()
 
             count += 1
 
             if count > 120:
+                self.stop()
                 # Trajectory end (TODO add line follower check for end)
                 break
 
 
+    def stop(self):
+        self.bw.stop()
+        self.fw.turn_straight()
+
+
 def main():
     picar.setup()
+    # stop()
     c = Car()
-    c.run()
+    # c.run()
+    try:
+        c.run()
+    except KeyboardInterrupt:
+        c.stop()
+
 
 
 if __name__ == '__main__':
