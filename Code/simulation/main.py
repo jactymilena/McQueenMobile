@@ -2,7 +2,7 @@ import numpy as np
 import bpy
 
 from sys import path
-path.append(r'C:\projets\McQueenMobile\Code')
+path.append(r'C:\projets\McQueenMobile\Code\simulation')
 
 
 import constants as const
