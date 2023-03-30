@@ -1,4 +1,5 @@
 import numpy as np
+import copy
 import bpy
 
 from sys import path
@@ -8,7 +9,7 @@ path.append(r'C:\projets\McQueenMobile\Code\simulation')
 import constants as const
 import utils
 
-import math
+
 
 
 class Ultrasonic_avoidance:
@@ -72,7 +73,76 @@ class Car:
         self.obj.keyframe_insert(data_path="rotation_euler", frame=keyframe)
 
 
-    def turn(self, keyframe, left=False):
+    def movement_points(self, angle_delta, rayon, frame_total, turn_direction):
+        axe2 = utils.toggle_axe(self.front_axe)
+        old_pos = self.obj.location
+        new_pos = copy.deepcopy(old_pos)
+        position_array = []
+
+        for i in range(int(frame_total)):
+            x = np.cos((i+1)*angle_delta) * rayon
+            y = np.sin((i+1)*angle_delta) * rayon
+            
+            new_pos[self.front_axe] = old_pos[self.front_axe] + y*self.direction
+            
+            if ((self.front_axe == const.Y_AXE) and (turn_direction == const.LEFT)) or ((self.front_axe == const.X_AXE) and (turn_direction == const.RIGHT)):
+                new_pos[axe2] = old_pos[axe2] - (rayon-x)*self.direction
+            else:
+                new_pos[axe2] = old_pos[axe2] + (rayon-x)*self.direction
+
+            position_array.append(copy.deepcopy(new_pos))
+        
+        return position_array
+
+
+    def rotation_points(self, angle_delta, frame_total, turn_direction):
+        old_rot = self.obj.rotation_euler
+        rotation_array = []
+
+        for i in range(frame_total):
+            new_rot = copy.deepcopy(old_rot)
+            
+            if turn_direction == const.LEFT:
+                new_rot[const.Z_AXE] += (i+1)*angle_delta
+            else:
+                new_rot[const.Z_AXE] -= (i+1)*angle_delta
+            
+            rotation_array.append(new_rot)
+        
+        return rotation_array
+    
+
+    def apply_turn(self, positions, rotations, keyframe, frame_rate):
+        for x in range(len(positions)):
+            self.obj.location = positions[x]
+            self.obj.rotation_euler = rotations[x]
+            self.obj.keyframe_insert(data_path="location", frame=keyframe)
+            self.obj.keyframe_insert(data_path="rotation_euler", frame=keyframe)
+            keyframe += frame_rate
+
+
+    def turn(self, angle, keyframe, frame_rate, vit, rayon=12):
+        turn_direction = const.RIGHT if angle < 0 else const.LEFT
+
+        angle = np.abs(angle)
+        dist = angle * rayon
+        frame_total = round(dist/vit)
+        angle_delta = angle/frame_total
+
+        # rotation
+        self.obj.keyframe_insert(data_path="rotation_euler", frame=keyframe-frame_rate)
+        rotations = self.rotation_points(angle_delta, frame_total, turn_direction)
+        # movement
+        positions = self.movement_points(angle_delta, rayon, frame_total, turn_direction)
+
+        self.apply_turn(positions, rotations, keyframe, frame_rate)
+
+        
+        self.front_axe = utils.toggle_axe(self.front_axe)
+        self.direction = utils.toggle_direction(self.direction)
+
+
+    def turn_temp(self, keyframe, left=False):
         angle = np.pi/2 if left else -np.pi/2
         self.rotate(angle, keyframe)
         
@@ -98,6 +168,9 @@ class Car:
         curr_frame = 0
         count = 0
 
+        vit_max = 0.297
+        vit_max = vit_max * 100 / 24  
+
         while True:
             bpy.context.scene.frame_set(curr_frame)
             self.rotate(0, curr_frame)
@@ -110,7 +183,7 @@ class Car:
             elif avoid_flag == const.TURN_FLAG:
                 # Obstacle detected, turn right   
                 print("TURN")        
-                self.turn(curr_frame)
+                self.turn(np.pi/2, curr_frame, frame_rate, vit_max) # keyframe, frame_rate, vit
             else:
                 self.move(curr_frame, move_dist)
 

@@ -1,5 +1,4 @@
 import bpy
-import math 
 
 
 def move_forward(object, frame_num, positions):

@@ -1,6 +1,5 @@
 import copy
 import bpy
-import math 
 import numpy as np
 
 X_AXE = 0
