@@ -123,9 +123,16 @@ class Car:
             self.curr_frame += frame_rate
 
 
+    def turn_right(self, frame_rate):
+        self.turn(-np.pi/2, frame_rate)
 
-    def turn(self, turn_direction, frame_rate, rayon=12):
-        angle = np.pi/2 if turn_direction == const.LEFT else -np.pi/2
+
+    def turn_left(self, frame_rate): 
+        self.turn(np.pi/2, frame_rate)
+
+
+    def turn(self, angle, frame_rate, rayon=12):
+        turn_direction = const.RIGHT if angle < 0 else const.LEFT
 
         angle = np.abs(angle)
         dist = angle * rayon
@@ -166,13 +173,13 @@ class Car:
 
     
     def obstacle_avoidance(self, frame_rate, move_dist, obs_size):
-        self.turn(const.RIGHT, frame_rate) 
+        self.turn_right(frame_rate) 
         self.move_by_dist(obs_size[0], frame_rate, move_dist)
-        self.turn(const.LEFT, frame_rate) 
+        self.turn_left(frame_rate) 
         self.move_by_dist(obs_size[1] + const.ORIGIN_DISTANCE, frame_rate, move_dist)
-        self.turn(const.LEFT, frame_rate) 
+        self.turn_left(frame_rate) 
         self.move_by_dist(obs_size[0], frame_rate, move_dist)
-        self.turn(const.RIGHT, frame_rate) 
+        self.turn_right(frame_rate)  
         # TODO : ajouter une condition au virage pour qu'il soit effectue seulement si la ligne est detectee (dans run pas ici)
 
 
