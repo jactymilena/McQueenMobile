@@ -17,6 +17,8 @@ def get_child_obj_location(obj):
     return obj.matrix_world.to_translation()
 
 
-def check_obs_direction(obj, obs, front_axe):
-    #print(f"obs {obs.location[front_axe]} obj {obj.matrix_world.to_translation()[front_axe]} front_axe {front_axe}")
-    return obs.location[front_axe] > get_child_obj_location(obj)[front_axe] 
+def check_obs_direction(obj, obs, front_axe, direction):
+    if direction == 1:
+        return obs.location[front_axe] > get_child_obj_location(obj)[front_axe] 
+    else:
+        return obs.location[front_axe] < get_child_obj_location(obj)[front_axe] 

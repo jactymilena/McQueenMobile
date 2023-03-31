@@ -28,16 +28,13 @@ class Ultrasonic_avoidance:
         return front_dist, sides_dist
 
 
-    def detect_obstacle(self, front_axe, move_dist):
+    def detect_obstacle(self, front_axe, move_dist, direction):
         sensor_pos = utils.get_child_obj_location(self.right_sensor)
-        sensor_pos[front_axe] += move_dist
         sides_axe = utils.toggle_axe(front_axe)
 
         for obs in self.obstacles:
             front_dist, sides_dist = self.get_distance(front_axe, sides_axe, sensor_pos, obs.location)
-
-            if utils.check_obs_direction(self.right_sensor, obs, front_axe) and sides_dist <= const.SENSOR_SIDES_RANGE:
-                
+            if utils.check_obs_direction(self.right_sensor, obs, front_axe, direction) and sides_dist <= const.SENSOR_SIDES_RANGE:
                 if front_dist <= const.SENSOR_CLOSE_RANGE:
                     return True
 
@@ -153,7 +150,6 @@ class Car:
 
         self.front_axe = utils.toggle_axe(self.front_axe) 
 
-        print(f"self.direction {self.direction } turn_direction {turn_direction}")
 
 
     def accelerate(curr_speed, goal_speed):
@@ -190,13 +186,13 @@ class Car:
             bpy.context.scene.frame_set(self.curr_frame)
             self.rotate(0)
 
-            if self.ua.detect_obstacle(self.front_axe, move_dist):
-                print("OBSTACLE DETECTED")
+            if self.ua.detect_obstacle(self.front_axe, move_dist, self.direction):
+                print(f"OBSTACLE DETECTED {self.curr_frame}")
                 self.move_by_dist(20, frame_rate, move_dist, backwards=True)
                 self.stop(2)
                 self.obstacle_avoidance(frame_rate, move_dist, [10, 10])
             else:
-                self.move(move_dist)
+                self.move(move_dist) # TODO add line follower move conditions
 
             self.curr_frame += frame_rate
             count += 1
