@@ -3,9 +3,8 @@ import copy
 import time
 import bpy
 
-from sys import path
-path.append(r'C:\projets\McQueenMobile\Code\simulation')
-
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(sys.path[0]),'simulation'))
 
 import constants as const
 import utils
@@ -143,7 +142,6 @@ class Car:
         positions = self.movement_points(angle_delta, rayon, frame_total, turn_direction)
 
         self.apply_turn(positions, rotations, frame_rate)
-
         
         if (self.front_axe == const.Y_AXE and turn_direction == const.LEFT) or (self.front_axe == const.X_AXE and turn_direction != const.LEFT):
             self.direction = utils.toggle_direction(self.direction)
