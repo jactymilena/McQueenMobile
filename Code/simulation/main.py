@@ -1,5 +1,6 @@
 import numpy as np
 import copy
+import time
 import bpy
 
 from sys import path
@@ -8,7 +9,6 @@ path.append(r'C:\projets\McQueenMobile\Code\simulation')
 
 import constants as const
 import utils
-
 
 
 
@@ -28,7 +28,7 @@ class Ultrasonic_avoidance:
         return front_dist, sides_dist
 
 
-    def avoid_obstacle(self, front_axe, move_dist):
+    def detect_obstacle(self, front_axe, move_dist):
         sensor_pos = utils.get_child_obj_location(self.right_sensor)
         sensor_pos[front_axe] += move_dist
         sides_axe = utils.toggle_axe(front_axe)
@@ -39,38 +39,40 @@ class Ultrasonic_avoidance:
             if utils.check_obs_direction(self.right_sensor, obs, front_axe) and sides_dist <= const.SENSOR_SIDES_RANGE:
                 
                 if front_dist <= const.SENSOR_CLOSE_RANGE:
-                    return const.BACKWARDS_FLAG
-                elif front_dist <= const.SENSOR_FAR_RANGE:
-                    return const.TURN_FLAG
+                    return True
 
-        return const.OTHER_FLAG
+        return False
 
 
 class Car:
 
-    def __init__(self):
-        print("init")
-
-
-    def init_simulation(self, car_name, obs_name, front_axe, direction):
+    def __init__(self, car_name, obs_name, front_axe, direction, max_speed):
         self.obj = bpy.data.objects[car_name]
         self.rotation_axe = const.Z_AXE
         self.front_axe = front_axe
         self.direction = direction
+        self.curr_frame = 0
+        self.max_speed = max_speed
         self.ua = Ultrasonic_avoidance(obs_name)
 
 
-    def move(self, keyframe, move_dist, backwards=False):
+    def move_by_dist(self, dist, frame_rate, move_dist, backwards=False):
+        for i in range(int(dist/move_dist)):
+            self.move(move_dist, backwards)
+            self.curr_frame += frame_rate
+
+
+    def move(self, move_dist, backwards=False):
         new_pos = self.obj.location 
         move_dist = move_dist if not backwards else -move_dist
         new_pos[self.front_axe] += move_dist*self.direction
         self.obj.location = new_pos[:]
-        self.obj.keyframe_insert(data_path="location", frame=keyframe)
+        self.obj.keyframe_insert(data_path="location", frame=self.curr_frame)
 
 
-    def rotate(self, angle, keyframe):
+    def rotate(self, angle):
         self.obj.rotation_euler[self.rotation_axe] += angle
-        self.obj.keyframe_insert(data_path="rotation_euler", frame=keyframe)
+        self.obj.keyframe_insert(data_path="rotation_euler", frame=self.curr_frame)
 
 
     def movement_points(self, angle_delta, rayon, frame_total, turn_direction):
@@ -112,44 +114,39 @@ class Car:
         return rotation_array
     
 
-    def apply_turn(self, positions, rotations, keyframe, frame_rate):
+    def apply_turn(self, positions, rotations, frame_rate):
         for x in range(len(positions)):
             self.obj.location = positions[x]
             self.obj.rotation_euler = rotations[x]
-            self.obj.keyframe_insert(data_path="location", frame=keyframe)
-            self.obj.keyframe_insert(data_path="rotation_euler", frame=keyframe)
-            keyframe += frame_rate
+            self.obj.keyframe_insert(data_path="location", frame=self.curr_frame)
+            self.obj.keyframe_insert(data_path="rotation_euler", frame=self.curr_frame)
+            self.curr_frame += frame_rate
 
 
-    def turn(self, angle, keyframe, frame_rate, vit, rayon=12):
-        turn_direction = const.RIGHT if angle < 0 else const.LEFT
+
+    def turn(self, turn_direction, frame_rate, rayon=12):
+        angle = np.pi/2 if turn_direction == const.LEFT else -np.pi/2
 
         angle = np.abs(angle)
         dist = angle * rayon
-        frame_total = round(dist/vit)
+        frame_total = round(dist/self.max_speed)
         angle_delta = angle/frame_total
 
         # rotation
-        self.obj.keyframe_insert(data_path="rotation_euler", frame=keyframe-frame_rate)
+        self.obj.keyframe_insert(data_path="rotation_euler", frame=self.curr_frame-frame_rate)
         rotations = self.rotation_points(angle_delta, frame_total, turn_direction)
         # movement
         positions = self.movement_points(angle_delta, rayon, frame_total, turn_direction)
 
-        self.apply_turn(positions, rotations, keyframe, frame_rate)
+        self.apply_turn(positions, rotations, frame_rate)
 
         
-        self.front_axe = utils.toggle_axe(self.front_axe)
-        self.direction = utils.toggle_direction(self.direction)
-
-
-    def turn_temp(self, keyframe, left=False):
-        angle = np.pi/2 if left else -np.pi/2
-        self.rotate(angle, keyframe)
-        
-        if (self.front_axe == const.Y_AXE and left) or (self.front_axe == const.X_AXE and not left):
+        if (self.front_axe == const.Y_AXE and turn_direction == const.LEFT) or (self.front_axe == const.X_AXE and turn_direction != const.LEFT):
             self.direction = utils.toggle_direction(self.direction)
 
         self.front_axe = utils.toggle_axe(self.front_axe) 
+
+        print(f"self.direction {self.direction } turn_direction {turn_direction}")
 
 
     def accelerate(curr_speed, goal_speed):
@@ -164,30 +161,37 @@ class Car:
         return current_speed
 
 
+    def stop(self, stop_time):
+        time.sleep(stop_time)
+
+    
+    def obstacle_avoidance(self, frame_rate, move_dist, obs_size):
+        self.turn(const.RIGHT, frame_rate) 
+        self.move_by_dist(obs_size[0], frame_rate, move_dist)
+        self.turn(const.LEFT, frame_rate) 
+        self.move_by_dist(obs_size[1] + const.ORIGIN_DISTANCE, frame_rate, move_dist)
+        self.turn(const.LEFT, frame_rate) 
+        self.move_by_dist(obs_size[0], frame_rate, move_dist)
+        self.turn(const.RIGHT, frame_rate) 
+        # TODO : ajouter une condition au virage pour qu'il soit effectue seulement si la ligne est detectee (dans run pas ici)
+
+
     def run(self, move_dist, frame_rate):
-        curr_frame = 0
         count = 0
 
-        vit_max = 0.297
-        vit_max = vit_max * 100 / 24  
-
         while True:
-            bpy.context.scene.frame_set(curr_frame)
-            self.rotate(0, curr_frame)
-            avoid_flag = self.ua.avoid_obstacle(self.front_axe, move_dist)
+            bpy.context.scene.frame_set(self.curr_frame)
+            self.rotate(0)
 
-            if avoid_flag == const.BACKWARDS_FLAG:
-                # Obstacle detected too close, move backwards
-                print("BACKWARDS")
-                self.move(curr_frame, move_dist, True)
-            elif avoid_flag == const.TURN_FLAG:
-                # Obstacle detected, turn right   
-                print("TURN")        
-                self.turn(np.pi/2, curr_frame, frame_rate, vit_max) # keyframe, frame_rate, vit
+            if self.ua.detect_obstacle(self.front_axe, move_dist):
+                print("OBSTACLE DETECTED")
+                self.move_by_dist(20, frame_rate, move_dist, backwards=True)
+                self.stop(2)
+                self.obstacle_avoidance(frame_rate, move_dist, [10, 10])
             else:
-                self.move(curr_frame, move_dist)
+                self.move(move_dist)
 
-            curr_frame += frame_rate
+            self.curr_frame += frame_rate
             count += 1
 
             if count > 120:
@@ -200,9 +204,9 @@ def main():
     frame_rate = 2
     front_axe = const.Y_AXE
     direction = 1
+    max_speed = 0.297 * 100 / 24 
 
-    c = Car()
-    c.init_simulation("car", "obstacles", front_axe, direction)
+    c = Car("car", "obstacles", front_axe, direction, max_speed)
     c.run(move_dist, frame_rate)
     
 
