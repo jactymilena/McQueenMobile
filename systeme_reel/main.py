@@ -83,20 +83,6 @@ class Car:
                 break
 
 
-    def test(self):
-        self.obstacle_avoidance()
-        # self.stop()
-
-        # self.fw.turn_straight()
-        # time.sleep(1)
-        # self.fw.turn_right()
-        # self.bw.forward()
-        # self.bw.speed = const.FORWARD_SPEED
-        # time.sleep(2.5)
-        # self.fw.turn_straight()
-        # time.sleep(1)
-        self.stop()
-
 
 def main():
     picar.setup()
