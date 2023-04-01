@@ -15,7 +15,7 @@ class Car:
         self.fw.turning_max = 45
 
 
-    def move(self, sec, backwards=False):
+    def move(self, sec=0, backwards=False):
         self.fw.turn_straight()
         if backwards:
             self.bw.backward()
@@ -26,14 +26,14 @@ class Car:
         time.sleep(sec)
         
     
-    def turn_right(self, sec):
+    def turn_right(self, sec=2.3):
         self.fw.turn_right()
         self.bw.forward()
         self.bw.speed = const.FORWARD_SPEED
         time.sleep(sec)
 
 
-    def turn_left(self, sec): 
+    def turn_left(self, sec=2.3): 
         self.fw.turn_left()
         self.bw.forward()
         self.bw.speed = const.FORWARD_SPEED
@@ -83,15 +83,29 @@ class Car:
                 break
 
 
+    def test(self):
+        self.obstacle_avoidance()
+        # self.stop()
+
+        # self.fw.turn_straight()
+        # time.sleep(1)
+        # self.fw.turn_right()
+        # self.bw.forward()
+        # self.bw.speed = const.FORWARD_SPEED
+        # time.sleep(2.5)
+        # self.fw.turn_straight()
+        # time.sleep(1)
+        self.stop()
+
+
 def main():
     picar.setup()
-
+    time.sleep(5)
     c = Car()
     try:
         c.run()
     except KeyboardInterrupt:
         c.stop()
-
 
 
 if __name__ == '__main__':
