@@ -4,7 +4,10 @@ import time
 import bpy
 
 import sys, os
-sys.path.append(os.path.join(os.path.dirname(sys.path[0]),'simulation'))
+
+dir = os.path.dirname(bpy.data.filepath)
+if not dir in sys.path:
+    sys.path.append(dir)
 
 import constants as const
 import utils
@@ -204,7 +207,7 @@ def main():
     move_dist = 2
     frame_rate = 2
     front_axe = const.Y_AXE
-    direction = 1
+    direction = -1
     max_speed = 0.297 * 100 / 24 
 
     c = Car("car", "obstacles", front_axe, direction, max_speed)
