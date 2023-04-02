@@ -81,16 +81,10 @@ class Ultrasonic_Avoidance(object):
 		#print('distance =',dis)
 		#print('status =',status)
 		return status
-	
 
-	def avoid_obstacle(self):
-		front_dist = self.get_distance()	
-		if front_dist <= const.SENSOR_CLOSE_RANGE:
-			return const.BACKWARDS_FLAG
-		elif front_dist <= const.SENSOR_FAR_RANGE:
-			return const.TURN_FLAG
-		else:
-			return const.OTHER_FLAG
+
+	def detect_obstacle(self):
+		return self.get_distance() <= const.SENSOR_CLOSE_RANGE
 
 
 def test():

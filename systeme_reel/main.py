@@ -15,7 +15,7 @@ class Car:
         self.fw.turning_max = 45
 
 
-    def move(self, backwards=False):
+    def move(self, sec=0, backwards=False):
         self.fw.turn_straight()
         if backwards:
             self.bw.backward()
@@ -23,8 +23,22 @@ class Car:
         else:
             self.bw.forward()
             self.bw.speed = const.FORWARD_SPEED
-        time.sleep(1)
+        time.sleep(sec)
         
+    
+    def turn_right(self, sec=2.3):
+        self.fw.turn_right()
+        self.bw.forward()
+        self.bw.speed = const.FORWARD_SPEED
+        time.sleep(sec)
+
+
+    def turn_left(self, sec=2.3): 
+        self.fw.turn_left()
+        self.bw.forward()
+        self.bw.speed = const.FORWARD_SPEED
+        time.sleep(sec)
+
 
     def turn(self, angle):
         self.fw.turn(angle)
@@ -33,27 +47,33 @@ class Car:
         time.sleep(1)
 
 
+    def stop(self, sec=0):
+        self.bw.stop()
+        self.fw.turn_straight()
+        time.sleep(sec)
+
+
+    def obstacle_avoidance(self):
+        self.turn_right()
+        self.move(2)
+        self.turn_left()
+        self.move(2)
+        self.turn_left()
+        self.move(2)
+        self.turn_right()
+
+
     def run(self):
         count = 0
 
         while True:
-            avoid_flag = self.ua.avoid_obstacle()
-            
-
-            if avoid_flag == const.BACKWARDS_FLAG:
-                # Obstacle detected too close, move backwards
-                print("BACKWARDS")
-                self.move(True)
-                self.stop()
-                break
-            elif avoid_flag == const.TURN_FLAG:
-                # Obstacle detected, turn right   
-                print("TURN")        
-                self.turn(90)
+            if self.ua.detect_obstacle():
+                print("OBSTACLE DETECTED")
+                self.move(1, backwards=True)
+                self.stop(2)
+                self.obstacle_avoidance()
             else:
-                print("MOVE")
                 self.move()
-                # self.fw.turn_straight()
 
             count += 1
 
@@ -63,21 +83,15 @@ class Car:
                 break
 
 
-    def stop(self):
-        self.bw.stop()
-        self.fw.turn_straight()
-
 
 def main():
     picar.setup()
-    # stop()
+    time.sleep(5)
     c = Car()
-    # c.run()
     try:
         c.run()
     except KeyboardInterrupt:
         c.stop()
-
 
 
 if __name__ == '__main__':
