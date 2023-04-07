@@ -124,7 +124,7 @@ def line_status(sensor1, sensor2, sensor3, sensor4, sensor5, trajectoire):
     return status
 
 
-def line_follow(lt_status_now):
+def line_follow_angle(lt_status_now):
     step = 0
     turning_angle = 0
     a_step = np.pi/60 # 3

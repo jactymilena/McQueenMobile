@@ -2,6 +2,8 @@ import numpy as np
 import copy
 import time
 import bpy
+from mathutils import Vector
+from mathutils.bvhtree import BVHTree
 
 import sys, os
 
@@ -12,7 +14,78 @@ if not dir in sys.path:
 import constants as const
 import utils
 
+class Line_following:
 
+    def __init__(self, trajectories_name):
+        self.sensor1_obj = bpy.data.objects["sensor1"]
+        self.sensor2_obj = bpy.data.objects["sensor2"]
+        self.sensor3_obj = bpy.data.objects["sensor3"]
+        self.sensor4_obj = bpy.data.objects["sensor4"]
+        self.sensor5_obj = bpy.data.objects["sensor5"]
+
+        self.trajectoire = bpy.data.objects[trajectories_name]
+
+    def detect_line(sensor, trajectoire):
+        
+        copy_sensor = sensor.matrix_world.copy()
+        sensor_verts = [copy_sensor @ vertex.co for vertex in sensor.data.vertices]
+        sensor_polys = [polygon.vertices for polygon in sensor.data.polygons]    
+
+        copy_traj = trajectoire.matrix_world.copy()
+        traj_verts = [copy_traj @ vertex.co for vertex in trajectoire.data.vertices] 
+        traj_polys = [polygon.vertices for polygon in trajectoire.data.polygons]
+
+        sensor_bvh_tree = BVHTree.FromPolygons(sensor_verts, sensor_polys)
+        traj_bvh_tree = BVHTree.FromPolygons(traj_verts, traj_polys)
+        intersections = sensor_bvh_tree.overlap(traj_bvh_tree)
+        return intersections
+    
+
+    def line_status(self, sensor1, sensor2, sensor3, sensor4, sensor5, trajectoire):
+        status = [0, 0, 0, 0, 0]
+        if self.detect_line(sensor1, trajectoire):
+            status[0] = 1
+        if self.detect_line(sensor2, trajectoire):
+            status[1] = 1
+        if self.detect_line(sensor3, trajectoire):
+            status[2] = 1
+        if self.detect_line(sensor4, trajectoire):
+            status[3] = 1
+        if self.detect_line(sensor5, trajectoire):
+            status[4] = 1
+        return status
+    
+    def line_follow_angle(lt_status_now):
+        step = 0
+        turning_angle = 0
+        a_step = np.pi/60 # 3
+        b_step = np.pi/18  # 10
+        c_step = np.pi/6 # 30  degré
+        d_step = np.pi/4 #  45 degré
+
+        # Angle calculate
+        if	lt_status_now == [0,0,1,0,0]:
+            step = 0	
+        elif lt_status_now == [0,1,1,0,0] or lt_status_now == [0,0,1,1,0]:
+            step = a_step
+        elif lt_status_now == [0,1,0,0,0] or lt_status_now == [0,0,0,1,0]:
+            step = b_step
+        elif lt_status_now == [1,1,0,0,0] or lt_status_now == [0,0,0,1,1]:
+            step = c_step
+        elif lt_status_now == [1,0,0,0,0] or lt_status_now == [0,0,0,0,1]:
+            step = d_step  
+    
+    # turn right
+        if lt_status_now in ([0,1,1,0,0],[0,1,0,0,0],[1,1,0,0,0],[1,0,0,0,0]):
+            turning_angle = -step/4
+    # turn left
+        elif lt_status_now in ([0,0,1,1,0],[0,0,0,1,0],[0,0,0,1,1],[0,0,0,0,1]):
+            turning_angle = step/4
+        elif lt_status_now == [0,0,0,0,0]:
+            turning_angle = 0
+        else :turning_angle = 0
+        
+        return turning_angle
 
 class Ultrasonic_avoidance:
 
@@ -45,14 +118,16 @@ class Ultrasonic_avoidance:
 
 class Car:
 
-    def __init__(self, car_name, obs_name, front_axe, direction, max_speed):
+    def __init__(self, car_name, obs_name, traject_name, front_axe, direction, max_speed, total_turning):
         self.obj = bpy.data.objects[car_name]
         self.rotation_axe = const.Z_AXE
         self.front_axe = front_axe
         self.direction = direction
         self.curr_frame = 0
         self.max_speed = max_speed
+        self.angle_car = total_turning
         self.ua = Ultrasonic_avoidance(obs_name)
+        self.lf = Line_following(traject_name)
 
 
     def move_by_dist(self, dist, frame_rate, move_dist, backwards=False):
@@ -61,10 +136,12 @@ class Car:
             self.curr_frame += frame_rate
 
 
-    def move(self, move_dist, backwards=False):
+    def move(self, move_dist, angle, backwards=False):
         new_pos = self.obj.location 
         move_dist = move_dist if not backwards else -move_dist
         new_pos[self.front_axe] += move_dist*self.direction
+        new_pos[const.X_AXE] += move_dist*np.cos(angle)
+        new_pos[const.Y_AXE] += move_dist*np.sin(angle)
         self.obj.location = new_pos[:]
         self.obj.keyframe_insert(data_path="location", frame=self.curr_frame)
 
@@ -112,6 +189,24 @@ class Car:
         
         return rotation_array
     
+    def change_direction(self):
+        if ((self.angle_car < -np.pi) and (self.angle_car > -np.pi*3/2)) or ((self.angle_car > np.pi) and (self.angle_car < np.pi*3/2)):
+            self.front_axe = const.X_AXE
+            self.direction = -1
+        elif ((self.angle_car < -np.pi/2) and (self.angle_car > -np.pi)) or ((self.angle_car > np.pi*3/2) and (self.angle_car < np.pi*2)):
+            self.front_axe = const.Y_AXE
+            self.direction = -1
+        elif ((self.angle_car > np.pi/2) and (self.angle_car  > np.pi)) or ((self.angle_car < -np.pi*3/2) and (self.angle_car > -np.pi*2)):
+            self.front_axe = const.Y_AXE
+            self.direction = 1
+        else: 
+            self.front_axe = const.X_AXE
+            self.direction = 1
+        if self.angle_car > 2*np.pi or self.angle_car  < -2*np.pi:
+            self.angle_car = self.angle_car - (2*np.pi)
+        elif self.angle_car < -2*np.pi:
+            self.angle_car = self.angle_car + (2*np.pi)
+
 
     def apply_turn(self, positions, rotations, frame_rate):
         for x in range(len(positions)):
@@ -146,10 +241,10 @@ class Car:
 
         self.apply_turn(positions, rotations, frame_rate)
         
-        if (self.front_axe == const.Y_AXE and turn_direction == const.LEFT) or (self.front_axe == const.X_AXE and turn_direction != const.LEFT):
-            self.direction = utils.toggle_direction(self.direction)
+       # if (self.front_axe == const.Y_AXE and turn_direction == const.LEFT) or (self.front_axe == const.X_AXE and turn_direction != const.LEFT):
+        #    self.direction = utils.toggle_direction(self.direction)
 
-        self.front_axe = utils.toggle_axe(self.front_axe) 
+        #self.front_axe = utils.toggle_axe(self.front_axe) 
 
 
 
@@ -182,7 +277,7 @@ class Car:
 
     def run(self, move_dist, frame_rate):
         count = 0
-
+        turning_angle = 0
         while True:
             bpy.context.scene.frame_set(self.curr_frame)
             self.rotate(0)
@@ -193,7 +288,12 @@ class Car:
                 self.stop(2)
                 self.obstacle_avoidance(frame_rate, move_dist, [10, 10])
             else:
-                self.move(move_dist) # TODO add line follower move conditions
+                #follow_line
+                lt_status_now = self.lf.line_status(self.lf.sensor1_obj, self.lf.sensor2_obj, self.lf.sensor3_obj, self.lf.sensor4_obj, self.lf.sensor5_obj, self.lf.trajectoire)
+                if lt_status_now == [1, 1, 1, 1, 1]:
+                    break
+                turning_angle = self.lf.line_follow_angle(lt_status_now)
+                #self.move(move_dist) # TODO add line follower move conditions
 
             self.curr_frame += frame_rate
             count += 1
@@ -206,11 +306,12 @@ class Car:
 def main():
     move_dist = 2
     frame_rate = 2
-    front_axe = const.Y_AXE
-    direction = -1
+    front_axe = const.X_AXE
+    direction = 1
     max_speed = 0.297 * 100 / 24 
+    total_turning = 0
 
-    c = Car("car", "obstacles", front_axe, direction, max_speed)
+    c = Car("car", "obstacles","road1", front_axe, direction, max_speed, total_turning)
     c.run(move_dist, frame_rate)
     
 
