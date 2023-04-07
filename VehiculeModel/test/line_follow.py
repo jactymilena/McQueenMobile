@@ -66,6 +66,12 @@ def turn(obj, axe1, angle, direction, keyframe, frame_rate, vit, rayon=12):
             
     return position_array, rotation_array
 
+def movement_turn(car_obj, position,rotation, curr_frame):
+    car_obj.location = position[x]
+    car_obj.rotation_euler = rotation[x]
+    car_obj.keyframe_insert(data_path="location", frame=curr_frame)
+    car_obj.keyframe_insert(data_path="rotation_euler", frame=curr_frame)
+    
 
 def move(obj, dist, angle,keyframe):
     new_pos = obj.location 
@@ -98,7 +104,6 @@ def detectLine(sensor, trajectoire):
     traj_verts = [copy_traj @ vertex.co for vertex in trajectoire.data.vertices] 
     traj_polys = [polygon.vertices for polygon in trajectoire.data.polygons]
     
-    
     sensor_bvh_tree = BVHTree.FromPolygons(sensor_verts, sensor_polys)
     traj_bvh_tree = BVHTree.FromPolygons(traj_verts, traj_polys)
     intersections = sensor_bvh_tree.overlap(traj_bvh_tree)
@@ -119,14 +124,13 @@ def line_status(sensor1, sensor2, sensor3, sensor4, sensor5, trajectoire):
     return status
 
 
-def line_follow(lt_status_now, off_track_count):
+def line_follow(lt_status_now):
     step = 0
     turning_angle = 0
     a_step = np.pi/60 # 3
     b_step = np.pi/18  # 10
     c_step = np.pi/6 # 30  degré
     d_step = np.pi/4 #  45 degré
-    step_angle = 0 # axe y
 
     # Angle calculate
     if	lt_status_now == [0,0,1,0,0]:
@@ -140,28 +144,18 @@ def line_follow(lt_status_now, off_track_count):
     elif lt_status_now == [1,0,0,0,0] or lt_status_now == [0,0,0,0,1]:
         step = d_step  
     
-    # Direction calculate
-    if	lt_status_now == [0,0,1,0,0]:
-        off_track_count = 0
-
 # turn right
-    elif lt_status_now in ([0,1,1,0,0],[0,1,0,0,0],[1,1,0,0,0],[1,0,0,0,0],[1,1,1,0,0]):
-        off_track_count = 0
+    if lt_status_now in ([0,1,1,0,0],[0,1,0,0,0],[1,1,0,0,0],[1,0,0,0,0]):
         turning_angle = -step/4
 # turn left
-    elif lt_status_now in ([0,0,1,1,0],[0,0,0,1,0],[0,0,0,1,1],[0,0,0,0,1],[0,0,1,1,1]):
-        off_track_count = 0
+    elif lt_status_now in ([0,0,1,1,0],[0,0,0,1,0],[0,0,0,1,1],[0,0,0,0,1]):
         turning_angle = step/4
     elif lt_status_now == [0,0,0,0,0]:
-        off_track_count += 1
         turning_angle = 0
     else :turning_angle = 0
     
     return turning_angle
     
-#def is_turning(turning):
- #   return !turning
-
 if __name__ == '__main__':
     sensor1_obj = bpy.data.objects["sensor1"]
     sensor2_obj = bpy.data.objects["sensor2"]
@@ -180,7 +174,6 @@ if __name__ == '__main__':
     frame_rate = 2
     curr_frame = 0
     direction = 1
-    off_track_count = 0
     total_turning = 0
     vit_max = 1.237
 
@@ -195,23 +188,19 @@ if __name__ == '__main__':
         turning_angle = line_follow(lt_status_now, 0)
         
         position, rotation = turn(car_obj, front_axe, turning_angle, direction, curr_frame, frame_rate,vit_max)
-
-        
         tmp_angle = turning_angle
         for x in range(len(position)):
-                rotate(car_obj, rotation_axe, 0, curr_frame)
-                bpy.context.scene.frame_set(curr_frame)
-                lt_status_now = line_status(sensor1_obj, sensor2_obj, sensor3_obj,sensor4_obj, sensor5_obj, trajectoire )
-                turning_angle = line_follow(lt_status_now, 0)
-                print(lt_status_now, "status ", turning_angle, "en rad")
-                if tmp_angle != turning_angle:
-                    print("doit break", tmp_angle, "! = ", turning_angle)
-                    break
-                car_obj.location = position[x]
-                car_obj.rotation_euler = rotation[x]
-                car_obj.keyframe_insert(data_path="location", frame=curr_frame)
-                car_obj.keyframe_insert(data_path="rotation_euler", frame=curr_frame)
-                curr_frame += frame_rate
+            rotate(car_obj, rotation_axe, 0, curr_frame)
+            bpy.context.scene.frame_set(curr_frame)
+            lt_status_now = line_status(sensor1_obj, sensor2_obj, sensor3_obj,sensor4_obj, sensor5_obj, trajectoire )
+            turning_angle = line_follow(lt_status_now)
+            print(lt_status_now, "status ", turning_angle, "en rad")
+            if tmp_angle != turning_angle:
+                print("doit break", tmp_angle, "! = ", turning_angle)
+                break
+            movement_turn(car_obj, position, rotation, curr_frame)
+            curr_frame += frame_rate
+        
         
         total_turning += turning_angle
         if ((total_turning < -np.pi) and (total_turning > -np.pi*3/2)) or ((total_turning < -np.pi and total_turning > -np.pi*3/2) and (total_turning > np.pi and total_turning < np.pi*3/2)):
@@ -229,7 +218,7 @@ if __name__ == '__main__':
         if total_turning > 2*np.pi or total_turning < -2*np.pi:
             total_turning = total_turning - (2*np.pi)
         elif total_turning < -2*np.pi:
-            total_turning = total_turning - (2*np.pi)
+            total_turning = total_turning + (2*np.pi)
         
         move(car_obj, vit_max, total_turning,  curr_frame)
         curr_frame += frame_rate 
