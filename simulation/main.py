@@ -23,10 +23,10 @@ class Ultrasonic_avoidance:
         self.right_sensor = bpy.data.objects["sensor_r"]
 
 
-    def get_distance(self, front_axe, sides_axe, sensor_pos, obs_pos):
-        front_dist = np.abs(sensor_pos[front_axe] - obs_pos[front_axe])
-        sides_dist = np.abs(sensor_pos[sides_axe] - obs_pos[sides_axe])
-
+    def get_distance(self, front_axe, sides_axe, sensor_pos, obs_obj, direction):
+        obstacle_distance = obs_obj.dimensions[front_axe]/2.0;
+        front_dist = np.abs((sensor_pos[front_axe] + (const.FRONT_DISTANCE * direction) + (obstacle_distance * direction))  - obs_obj.location[front_axe])
+        sides_dist = np.abs(sensor_pos[sides_axe] - obs_obj.location[sides_axe])
         return front_dist, sides_dist
 
 
@@ -35,7 +35,7 @@ class Ultrasonic_avoidance:
         sides_axe = utils.toggle_axe(front_axe)
 
         for obs in self.obstacles:
-            front_dist, sides_dist = self.get_distance(front_axe, sides_axe, sensor_pos, obs.location)
+            front_dist, sides_dist = self.get_distance(front_axe, sides_axe, sensor_pos, obs, direction)
             if utils.check_obs_direction(self.right_sensor, obs, front_axe, direction) and sides_dist <= const.SENSOR_SIDES_RANGE:
                 if front_dist <= const.SENSOR_CLOSE_RANGE:
                     return True
