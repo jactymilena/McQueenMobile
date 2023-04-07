@@ -216,16 +216,34 @@ class Car:
             self.obj.keyframe_insert(data_path="rotation_euler", frame=self.curr_frame)
             self.curr_frame += frame_rate
 
+    def apply_turn_with_line(self,positions, rotations, angle, frame_rate):
+        tmp_angle = angle
+        for x in range(len(positions)):
+            self.rotate(0)
+            bpy.context.scene.frame_set(self.curr_frame)
+            lt_status_now = self.lf.line_status(self.lf.sensor1_obj, self.lf.sensor2_obj, self.lf.sensor3_obj, self.lf.sensor4_obj, self.lf.sensor5_obj, self.lf.trajectoire )
+            turning_angle = self.lf.line_follow_angle(lt_status_now)
+            print(lt_status_now, "status ", turning_angle, "en rad")
+            if tmp_angle != turning_angle:
+                print("doit break", tmp_angle, "! = ", turning_angle)
+                break
+            self.obj.location = positions[x]
+            self.obj.rotation_euler = rotations[x]
+            self.obj.keyframe_insert(data_path="location", frame=self.curr_frame)
+            self.obj.keyframe_insert(data_path="rotation_euler", frame=self.curr_frame)
+           
+            self.curr_frame += frame_rate
+
 
     def turn_right(self, frame_rate):
-        self.turn(-np.pi/2, frame_rate)
+        self.turn(-np.pi/2, frame_rate,0)
 
 
     def turn_left(self, frame_rate): 
-        self.turn(np.pi/2, frame_rate)
+        self.turn(np.pi/2, frame_rate, 0)
 
 
-    def turn(self, angle, frame_rate, rayon=12):
+    def turn(self, angle, frame_rate, isline, rayon=12):
         turn_direction = const.RIGHT if angle < 0 else const.LEFT
 
         angle = np.abs(angle)
@@ -239,7 +257,10 @@ class Car:
         # movement
         positions = self.movement_points(angle_delta, rayon, frame_total, turn_direction)
 
-        self.apply_turn(positions, rotations, frame_rate)
+        if isline:
+            self.apply_turn_with_line(positions, rotations, angle,frame_rate)
+        else:
+            self.apply_turn(positions, rotations, frame_rate)
         
        # if (self.front_axe == const.Y_AXE and turn_direction == const.LEFT) or (self.front_axe == const.X_AXE and turn_direction != const.LEFT):
         #    self.direction = utils.toggle_direction(self.direction)
@@ -293,6 +314,8 @@ class Car:
                 if lt_status_now == [1, 1, 1, 1, 1]:
                     break
                 turning_angle = self.lf.line_follow_angle(lt_status_now)
+                self.turn(self, turning_angle, 1, frame_rate)
+                self.change_direction()
                 #self.move(move_dist) # TODO add line follower move conditions
 
             self.curr_frame += frame_rate
