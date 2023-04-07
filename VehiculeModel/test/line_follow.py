@@ -67,11 +67,10 @@ def turn(obj, axe1, angle, direction, keyframe, frame_rate, vit, rayon=12):
     return position_array, rotation_array
 
 
-def move(obj, dist, axe, direction, angle,keyframe):
+def move(obj, dist, angle,keyframe):
     new_pos = obj.location 
-    #new_pos[axe] += dist*direction
-    new_pos[X_AXE] += dist*direction*np.cos(angle)
-    new_pos[Y_AXE] += dist*direction*np.sin(angle)
+    new_pos[X_AXE] += dist*np.cos(angle)
+    new_pos[Y_AXE] += dist*np.sin(angle)
     obj.location = new_pos[:]
     obj.keyframe_insert(data_path="location", frame=keyframe)
 
@@ -124,8 +123,8 @@ def line_follow(lt_status_now, off_track_count):
     step = 0
     turning_angle = 0
     a_step = np.pi/60 # 3
-    b_step = np.pi/16  # 10
-    c_step = np.pi/8 # 30  degré
+    b_step = np.pi/18  # 10
+    c_step = np.pi/6 # 30  degré
     d_step = np.pi/4 #  45 degré
     step_angle = 0 # axe y
 
@@ -148,16 +147,15 @@ def line_follow(lt_status_now, off_track_count):
 # turn right
     elif lt_status_now in ([0,1,1,0,0],[0,1,0,0,0],[1,1,0,0,0],[1,0,0,0,0],[1,1,1,0,0]):
         off_track_count = 0
-        turning_angle = -step
+        turning_angle = -step/4
 # turn left
     elif lt_status_now in ([0,0,1,1,0],[0,0,0,1,0],[0,0,0,1,1],[0,0,0,0,1],[0,0,1,1,1]):
         off_track_count = 0
-        turning_angle = step
+        turning_angle = step/4
     elif lt_status_now == [0,0,0,0,0]:
         off_track_count += 1
         turning_angle = 0
     else :turning_angle = 0
-    #print(turning_angle, "en rad")
     
     return turning_angle
     
@@ -172,12 +170,9 @@ if __name__ == '__main__':
     sensor5_obj = bpy.data.objects["sensor5"]
 
     trajectoire = bpy.data.objects["NurbsPath"]
-    
-    #print(detectLine(sensor4_obj, trajectoire))
-    lt_status_now=line_status(sensor1_obj, sensor2_obj, sensor3_obj,sensor4_obj, sensor5_obj, trajectoire )
-
     car_obj = bpy.data.objects["car"]
-    
+    lt_status_now=line_status(sensor1_obj, sensor2_obj, sensor3_obj,sensor4_obj, sensor5_obj, trajectoire )
+    #variable
     move_dist = 2
     count = 0
     front_axe = X_AXE
@@ -187,7 +182,7 @@ if __name__ == '__main__':
     direction = 1
     off_track_count = 0
     total_turning = 0
-   # turning = false
+    vit_max = 1.237
 
     while True:
         rotate(car_obj, rotation_axe, 0, curr_frame)
@@ -195,16 +190,12 @@ if __name__ == '__main__':
 
         print("curr_frame: ", curr_frame)
         lt_status_now = line_status(sensor1_obj, sensor2_obj, sensor3_obj,sensor4_obj, sensor5_obj, trajectoire )
-        print(lt_status_now, " line status ")
-#        print(turning_angle, "en rad")
+        if lt_status_now == [1, 1, 1, 1, 1]:
+            break
         turning_angle = line_follow(lt_status_now, 0)
         
-        #if total_turning > np.pi/2:
-        #    front_axe = toggle_axe(front_axe)
-        #    direction = toggle_direction(direction)
-        #    total_turning = 0
-        position, rotation = turn(car_obj, front_axe, turning_angle, direction, curr_frame, frame_rate,1.23)
-        #rotate(car_obj, rotation_axe, step_angle, curr_frame)
+        position, rotation = turn(car_obj, front_axe, turning_angle, direction, curr_frame, frame_rate,vit_max)
+
         
         tmp_angle = turning_angle
         for x in range(len(position)):
@@ -221,19 +212,30 @@ if __name__ == '__main__':
                 car_obj.keyframe_insert(data_path="location", frame=curr_frame)
                 car_obj.keyframe_insert(data_path="rotation_euler", frame=curr_frame)
                 curr_frame += frame_rate
-                #print("curr_frame: ", curr_frame)
-                
-       # move(car_obj, 1.237, front_axe, direction, curr_frame)
         
         total_turning += turning_angle
-        print("total_turning = ", total_turning)
+        if ((total_turning < -np.pi) and (total_turning > -np.pi*3/2)) or ((total_turning < -np.pi and total_turning > -np.pi*3/2) and (total_turning > np.pi and total_turning < np.pi*3/2)):
+            front_axe = X_AXE
+            direction = -1
+        elif ((total_turning < -np.pi/2) and (total_turning > -np.pi)) or ((total_turning > np.pi*3/2) and (total_turning < np.pi*2)):
+            front_axe = Y_AXE
+            direction = -1
+        elif ((total_turning > np.pi/2) and (total_turning > np.pi)) or ((total_turning < -np.pi*3/2) and (total_turning > -np.pi*2)):
+             front_axe = Y_AXE
+             direction = 1
+        else: 
+            front_axe = X_AXE
+            direction = 1
+        if total_turning > 2*np.pi or total_turning < -2*np.pi:
+            total_turning = total_turning - (2*np.pi)
+        elif total_turning < -2*np.pi:
+            total_turning = total_turning - (2*np.pi)
         
-        #if off_track_count == 0:
-        move(car_obj, 1.23, front_axe, direction, total_turning,  curr_frame)
+        move(car_obj, vit_max, total_turning,  curr_frame)
         curr_frame += frame_rate 
 
         count += 1
         
-        if count > 60:
+        if count > 110:
             # Trajectory end
             break
