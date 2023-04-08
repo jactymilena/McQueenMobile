@@ -185,7 +185,7 @@ if __name__ == '__main__':
         lt_status_now = line_status(sensor1_obj, sensor2_obj, sensor3_obj,sensor4_obj, sensor5_obj, trajectoire )
         if lt_status_now == [1, 1, 1, 1, 1]:
             break
-        turning_angle = line_follow(lt_status_now)
+        turning_angle = line_follow_angle(lt_status_now)
         
         position, rotation = turn(car_obj, front_axe, turning_angle, direction, curr_frame, frame_rate,vit_max)
         tmp_angle = turning_angle
@@ -193,7 +193,7 @@ if __name__ == '__main__':
             rotate(car_obj, rotation_axe, 0, curr_frame)
             bpy.context.scene.frame_set(curr_frame)
             lt_status_now = line_status(sensor1_obj, sensor2_obj, sensor3_obj,sensor4_obj, sensor5_obj, trajectoire )
-            turning_angle = line_follow(lt_status_now)
+            turning_angle = line_follow_angle(lt_status_now)
             print(lt_status_now, "status ", turning_angle, "en rad")
             if tmp_angle != turning_angle:
                 print("doit break", tmp_angle, "! = ", turning_angle)
