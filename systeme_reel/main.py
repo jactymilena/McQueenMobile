@@ -31,7 +31,7 @@ class Car:
     def move(self, sec=0, backwards=False, decelerate=False):
         self.fw.turn_straight()
         self.init_acceleration(decelerate)
-        
+        # self.bw.speed = const.FORWARD_SPEED
         if backwards:
             self.bw.backward()
         else:
@@ -80,6 +80,9 @@ class Car:
             
     def accelerate(self):
         self.speed = self.speed + (const.ACC_RATE * const.ACC_TIME) * (-1 if self.is_dec else 1)
+
+    # def accelerate_by_dist(dist):
+
     
     
     def init_acceleration(self, decelerate=False):
@@ -94,7 +97,6 @@ class Car:
                 self.is_dec = False
                 self.start_time_acc = time.time()
         
-    
     
     def apply_speed(self):
         percentage_speed = (self.speed/const.SPEED_RATE)*100.0
@@ -142,7 +144,9 @@ class Car:
             else:
                 self.move(backwards=False, decelerate=False)
 
-            
+        
+            time.sleep(0.2)
+
             if self.check_acceleration():
                 self.accelerate()
                 self.apply_speed()
@@ -156,16 +160,49 @@ class Car:
 
 
     def test(self):
-        #self.obstacle_avoidance()
+        threshold = 10
+
+        while True:
+            distance = self.ua.get_distance()
+            status = self.ua.less_than(threshold)
+            if distance != -1:
+                print('distance', distance, 'cm')
+                time.sleep(0.2)
+            else:
+                print(False)
+            if status == 1:
+                print("Less than %d" % threshold)
+            elif status == 0:
+                print("Over %d" % threshold)
+            else:
+                print("Read distance error.")
+        # self.move_by_dist(10)
+        # self.obstacle_avoidance()
         # self.stop()
 
-        self.fw.turn_right()
-        self.bw.forward()
-        self.bw.speed = const.FORWARD_SPEED
-        # time.sleep(2.5)
-        # self.fw.turn_straight()
-        time.sleep(2)
-        self.stop()
+        # self.fw.turn_right()
+        # self.bw.forward()
+        # self.bw.speed = const.FORWARD_SPEED
+        # # time.sleep(2.5)
+        # # self.fw.turn_straight()
+        # time.sleep(2)
+        # self.stop()
+
+        # turning_angle = 90
+        # # self.fw.turn(turning_angle)
+        # self.fw.turn_right()
+        # self.bw.forward()
+        # self.bw.speed = const.FORWARD_SPEED
+        # time.sleep(5)
+
+        # while True:
+            # self.move(2)
+
+            # if self.check_acceleration():
+            #     self.accelerate()
+            #     self.apply_speed()
+        # self.stop()
+
 
 
 def main():
@@ -174,7 +211,7 @@ def main():
     c = Car()
     try:
         c.run()
-        c.stop()
+        # c.test()
     except KeyboardInterrupt:
         c.stop()
 
