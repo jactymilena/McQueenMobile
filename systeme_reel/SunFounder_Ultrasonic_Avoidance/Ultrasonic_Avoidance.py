@@ -14,7 +14,6 @@ import time
 import RPi.GPIO as GPIO
 import constants as const
 
-
 class Ultrasonic_Avoidance(object):
 	timeout = 0.05
 
@@ -22,6 +21,8 @@ class Ultrasonic_Avoidance(object):
 		self.channel = channel
 		GPIO.setmode(GPIO.BCM)
 
+		self.last_measures = []
+		self.measures_index = 0
 
 	def distance(self):
 		pulse_end = 0
@@ -67,7 +68,7 @@ class Ultrasonic_Avoidance(object):
 			#print('    %s' % a)
 			sum += a
 		return int(sum/mount)
-	
+
 
 	def less_than(self, alarm_gate):
 		dis = self.get_distance()
@@ -81,10 +82,38 @@ class Ultrasonic_Avoidance(object):
 		#print('distance =',dis)
 		#print('status =',status)
 		return status
+	
+	def clear_measures(self):
+		self.last_measures[:] = []
 
 
 	def detect_obstacle(self):
-		return self.get_distance() <= const.SENSOR_CLOSE_RANGE
+		measure = self.get_distance()
+
+		self.measures_index += 1
+
+		if len(self.last_measures) >= 5:
+			index = self.measures_index % 5
+			self.last_measures[index] = measure
+		else:
+			self.last_measures.append(measure)
+			return False
+		
+		measures_mean = sum(self.last_measures) / len(self.last_measures)
+
+		print(self.last_measures)
+		# print("mean : " + str(measures_mean))
+		
+		
+		# print("distance " + str(measures_mean)  + " sensor_close_range " + str(const.SENSOR_CLOSE_RANGE)  + " " + str(int(measures_mean) < int(const.SENSOR_CLOSE_RANGE)) )
+
+		# for
+		# distances = [self.get_distance() for i in range(30)]
+		# for i in range(15):
+		# 	distances.append(self.get_distance())
+		# print(distances)
+
+		return (measures_mean <= const.SENSOR_CLOSE_RANGE) #and not (test <= 2)
 
 
 def test():
@@ -93,6 +122,7 @@ def test():
 	while True:
 		distance = UA.get_distance()
 		status = UA.less_than(threshold)
+		print('distance', distance, 'cm')
 		if distance != -1:
 			print('distance', distance, 'cm')
 			time.sleep(0.2)

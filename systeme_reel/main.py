@@ -1,4 +1,4 @@
-# from SunFounder_Line_Follower import Line_Follower
+from SunFounder_Line_Follower import Line_Follower
 from SunFounder_Ultrasonic_Avoidance import Ultrasonic_Avoidance
 from picar import front_wheels
 from picar import back_wheels
@@ -13,6 +13,7 @@ import math
 class Car:
     def __init__(self):
         self.ua = Ultrasonic_Avoidance.Ultrasonic_Avoidance(20)
+        self.lf = Line_Follower.Line_Follower()
         self.fw = front_wheels.Front_Wheels(db='config')
         self.bw = back_wheels.Back_Wheels(db='config')
         self.fw.turning_max = 45
@@ -24,12 +25,12 @@ class Car:
     
     def move_by_dist(self, dist, backwards=False):
         sec = dist/(const.FORWARD_SPEED*const.SPEED_RATE/100.0)
-        
+        self.fw.turn_straight()
         self.move(sec, backwards)
         
 
     def move(self, sec=0, backwards=False, decelerate=False):
-        self.fw.turn_straight()
+        # self.fw.turn_straight()
         self.init_acceleration(decelerate)
         # self.bw.speed = const.FORWARD_SPEED
         if backwards:
@@ -70,12 +71,14 @@ class Car:
 
     def obstacle_avoidance(self):
         self.turn_right()
-        self.move(2)
+        self.move(1.5)
         self.turn_left()
-        self.move(2)
+        self.move(1.5)
         self.turn_left()
-        self.move(2)
+        self.move(1.5)
         self.turn_right()
+
+
 
             
     def accelerate(self):
@@ -133,6 +136,7 @@ class Car:
         
     def run(self):
         count = 0
+        self.fw.turn_straight()
 
         while True:
             print("acc " + str(self.is_acc) + " speed " + str(self.speed))
@@ -141,16 +145,25 @@ class Car:
                 self.move(1, backwards=True)
                 self.stop(2)
                 self.obstacle_avoidance()
+                self.ua.clear_measures()
             else:
                 self.move(backwards=False, decelerate=False)
 
-        
-            time.sleep(0.2)
+            
+            turning_angle = self.lf.follow_line(const.LINE_STEP)
+            
+            if(turning_angle == -1):
+                self.stop()
+                break
+            else:
+                self.fw.turn(turning_angle)
+            
 
             if self.check_acceleration():
                 self.accelerate()
                 self.apply_speed()
 
+            time.sleep(0.2)
             count += 1
 
             if count > 300:
@@ -160,22 +173,27 @@ class Car:
 
 
     def test(self):
-        threshold = 10
 
-        while True:
-            distance = self.ua.get_distance()
-            status = self.ua.less_than(threshold)
-            if distance != -1:
-                print('distance', distance, 'cm')
-                time.sleep(0.2)
-            else:
-                print(False)
-            if status == 1:
-                print("Less than %d" % threshold)
-            elif status == 0:
-                print("Over %d" % threshold)
-            else:
-                print("Read distance error.")
+        self.fw.turn_straight()
+        time.sleep(2)
+        self.fw.turn(90) 
+
+        # threshold = 10
+
+        # while True:
+        #     distance = self.ua.get_distance()
+        #     status = self.ua.less_than(threshold)
+        #     if distance != -1:
+        #         print('distance', distance, 'cm')
+        #         time.sleep(0.2)
+        #     else:
+        #         print(False)
+        #     if status == 1:
+        #         print("Less than %d" % threshold)
+        #     elif status == 0:
+        #         print("Over %d" % threshold)
+        #     else:
+        #         print("Read distance error.")
         # self.move_by_dist(10)
         # self.obstacle_avoidance()
         # self.stop()

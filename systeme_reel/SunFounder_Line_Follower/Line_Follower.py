@@ -3,6 +3,7 @@ import smbus
 import math
 import time
 
+import constants as const
 
 class Line_Follower(object):
 	
@@ -101,6 +102,46 @@ class Line_Follower(object):
 			lt_status = self.read_digital()
 			if lt_status[2] == 1:
 				break
+
+
+	def follow_line(self, step_angles):
+		self.references = const.LINE_REFERENCES
+		lt_status_now = self.read_digital()
+
+
+		if	lt_status_now == [1,1,1,1,1]: return -1
+			
+
+		turning_angle = 90
+
+		if	lt_status_now == [0,0,1,0,0]:
+			step = 0	
+		elif lt_status_now == [0,1,1,0,0] or lt_status_now == [0,0,1,1,0]:
+			step = step_angles[0]
+		elif lt_status_now == [0,1,0,0,0] or lt_status_now == [0,0,0,1,0]:
+			step = step_angles[1]
+		elif lt_status_now == [1,1,0,0,0] or lt_status_now == [0,0,0,1,1]:
+			step = step_angles[2]
+		elif lt_status_now == [1,0,0,0,0] or lt_status_now == [0,0,0,0,1]:
+			step = step_angles[3]
+
+		# Calculate direction
+		if	lt_status_now == [0,0,1,0,0]:
+			# off_track_count = 0
+			# fw.turn(90)
+			turning_angle = 90
+		# turn right
+		elif lt_status_now in ([0,1,1,0,0],[0,1,0,0,0],[1,1,0,0,0],[1,0,0,0,0]):
+			# off_track_count = 0
+			turning_angle = int(90 - step)
+		# turn left
+		elif lt_status_now in ([0,0,1,1,0],[0,0,0,1,0],[0,0,0,1,1],[0,0,0,0,1]):
+			# off_track_count = 0
+			turning_angle = int(90 + step)
+		# elif lt_status_now == [0,0,0,0,0]:
+		# 	turning_angle = 0
+
+		return turning_angle
 
 
 	@property
