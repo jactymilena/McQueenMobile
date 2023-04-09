@@ -138,8 +138,10 @@ class Line_Follower(object):
 		elif lt_status_now in ([0,0,1,1,0],[0,0,0,1,0],[0,0,0,1,1],[0,0,0,0,1]):
 			# off_track_count = 0
 			turning_angle = int(90 + step)
-		# elif lt_status_now == [0,0,0,0,0]:
-		# 	turning_angle = 0
+		elif lt_status_now == [0,0,0,0,0]:
+			turning_angle = 0
+		else:
+			turning_angle = 0
 
 		return turning_angle
 

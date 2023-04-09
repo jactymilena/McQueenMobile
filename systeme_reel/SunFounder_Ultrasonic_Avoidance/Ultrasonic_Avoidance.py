@@ -83,8 +83,15 @@ class Ultrasonic_Avoidance(object):
 		#print('status =',status)
 		return status
 	
+
 	def clear_measures(self):
 		self.last_measures[:] = []
+
+
+	# def calibrate(self):
+	# 	for i in range(30):
+	# 		t = self.get_distance()
+	# 		time.sleep(0.2)
 
 
 	def detect_obstacle(self):
@@ -92,17 +99,28 @@ class Ultrasonic_Avoidance(object):
 
 		self.measures_index += 1
 
+
+		# if measure + 10 < measures_mean || measure - 10 > measures_mean
+
+
 		if len(self.last_measures) >= 5:
-			index = self.measures_index % 5
+			index = (self.measures_index) % 5
+			print("index " + str(index) + " measures_index " +  str(self.measures_index))
 			self.last_measures[index] = measure
 		else:
 			self.last_measures.append(measure)
 			return False
-		
+
+			# if len(self.last_measures) < 5: 
+			# # self.last_measures.append(measure)
+			# 	return False
+
+
 		measures_mean = sum(self.last_measures) / len(self.last_measures)
 
 		print(self.last_measures)
-		# print("mean : " + str(measures_mean))
+
+		print("mean : " + str(measures_mean))
 		
 		
 		# print("distance " + str(measures_mean)  + " sensor_close_range " + str(const.SENSOR_CLOSE_RANGE)  + " " + str(int(measures_mean) < int(const.SENSOR_CLOSE_RANGE)) )

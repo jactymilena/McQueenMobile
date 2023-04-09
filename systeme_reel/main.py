@@ -24,15 +24,19 @@ class Car:
         
     
     def move_by_dist(self, dist, backwards=False):
-        sec = dist/(const.FORWARD_SPEED*const.SPEED_RATE/100.0)
         self.fw.turn_straight()
-        self.move(sec, backwards)
+        sec = dist/(const.FORWARD_SPEED*const.SPEED_RATE/100.0)
+       
+        self.move(sec, backwards, acc=False)
         
 
-    def move(self, sec=0, backwards=False, decelerate=False):
+    def move(self, sec=0, backwards=False, acc=True, decelerate=False):
         # self.fw.turn_straight()
-        self.init_acceleration(decelerate)
-        # self.bw.speed = const.FORWARD_SPEED
+        if acc:
+            self.init_acceleration(decelerate)
+        else:
+            self.bw.speed = const.FORWARD_SPEED
+
         if backwards:
             self.bw.backward()
         else:
@@ -40,14 +44,14 @@ class Car:
         time.sleep(sec)
         
     
-    def turn_right(self, sec=2.3):
+    def turn_right(self, sec=2):
         self.fw.turn_right()
         self.bw.forward()
         self.bw.speed = const.FORWARD_SPEED
         time.sleep(sec)
 
 
-    def turn_left(self, sec=2.3): 
+    def turn_left(self, sec=2): 
         self.fw.turn_left()
         self.bw.forward()
         self.bw.speed = const.FORWARD_SPEED
@@ -58,7 +62,7 @@ class Car:
         self.is_acc = False
         self.fw.turn(angle)
         self.bw.forward()
-        self.bw.speed = const.FORWARD_SPEED
+        # self.bw.speed = const.FORWARD_SPEED
         time.sleep(1)
 
 
@@ -71,11 +75,11 @@ class Car:
 
     def obstacle_avoidance(self):
         self.turn_right()
-        self.move(1.5)
+        self.move_by_dist(5)
         self.turn_left()
-        self.move(1.5)
+        self.move_by_dist(40)
         self.turn_left()
-        self.move(1.5)
+        self.move_by_dist(40)
         self.turn_right()
 
 
@@ -137,22 +141,28 @@ class Car:
     def run(self):
         count = 0
         self.fw.turn_straight()
-
+        # self.ua.calibrate()
         while True:
             print("acc " + str(self.is_acc) + " speed " + str(self.speed))
             if self.ua.detect_obstacle():
                 print("OBSTACLE DETECTED")
-                self.move(1, backwards=True)
                 self.stop(2)
+                self.move_by_dist(20, backwards=True)
+                # self.move(1, backwards=True, acc=False)
+                self.stop(1)
                 self.obstacle_avoidance()
-                self.ua.clear_measures()
+                # #time.sleep(1)
+                # self.ua.clear_measures()
+                # break
+                
             else:
-                self.move(backwards=False, decelerate=False)
+                self.move(backwards=False, acc=True,decelerate=False)
 
             
             turning_angle = self.lf.follow_line(const.LINE_STEP)
             
             if(turning_angle == -1):
+                # Trajectory end
                 self.stop()
                 break
             else:
@@ -166,17 +176,19 @@ class Car:
             time.sleep(0.2)
             count += 1
 
-            if count > 300:
-                self.stop()
-                # Trajectory end (TODO add line follower check for end)
-                break
+            # if count > 300:
+            #     self.stop()
+            #     # Trajectory end (TODO add line follower check for end)
+            #     break
 
+
+    
 
     def test(self):
 
-        self.fw.turn_straight()
-        time.sleep(2)
-        self.fw.turn(90) 
+        # self.fw.turn_straight()
+        # time.sleep(5)
+        # self.fw.turn(90) 
 
         # threshold = 10
 
@@ -194,9 +206,10 @@ class Car:
         #         print("Over %d" % threshold)
         #     else:
         #         print("Read distance error.")
+
         # self.move_by_dist(10)
-        # self.obstacle_avoidance()
-        # self.stop()
+        self.obstacle_avoidance()
+        self.stop()
 
         # self.fw.turn_right()
         # self.bw.forward()
@@ -222,14 +235,13 @@ class Car:
         # self.stop()
 
 
-
 def main():
     picar.setup()
     time.sleep(5)
     c = Car()
     try:
-        c.run()
         # c.test()
+        c.run()
     except KeyboardInterrupt:
         c.stop()
 
