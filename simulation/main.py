@@ -58,9 +58,8 @@ class Line_following:
     
     def line_follow_angle(self, lt_status_now):
         step = 0
-        #turning_angle = 0
-        a_step = np.pi/60 # 3
-        b_step = np.pi/18  # 10
+        a_step = np.pi/40 # 3
+        b_step = np.pi/10  # 10
         c_step = np.pi/6 # 30  degré
         d_step = np.pi/4 #  45 degré
 
@@ -85,13 +84,7 @@ class Line_following:
     # turn left
         elif lt_status_now in ([0,0,1,1,0],[0,0,0,1,0],[0,0,0,1,1],[0,0,0,0,1]):
             self.last_angle = step/4
-        #elif lt_status_now == [0,0,0,0,0]:
-        #    turning_angle = 
-        #else :turning_angle = 0
-        
-        #self.last_angle = turning_angle
-       # elif lt_status_now == [0,0,0,0,0]:
-         #   turning_angle = self.last_angle
+
         
         return self.last_angle
 
@@ -149,8 +142,8 @@ class Car:
         new_pos = self.obj.location 
         move_dist = move_dist if not backwards else -move_dist
         #new_pos[self.front_axe] += move_dist*self.direction
-        new_pos[const.X_AXE] += move_dist*np.cos(self.angle_car)
-        new_pos[const.Y_AXE] += move_dist*np.sin(self.angle_car)
+        new_pos[self.front_axe] += move_dist*np.cos(self.angle_car)
+        new_pos[utils.toggle_axe(self.front_axe)] += move_dist*np.sin(self.angle_car)
         self.obj.location = new_pos[:]
         self.obj.keyframe_insert(data_path="location", frame=self.curr_frame)
 
@@ -233,7 +226,6 @@ class Car:
             
             lt_status_now = self.lf.line_status(self.lf.sensor1_obj, self.lf.sensor2_obj, self.lf.sensor3_obj, self.lf.sensor4_obj, self.lf.sensor5_obj, self.lf.trajectoire )
             turning_angle = self.lf.line_follow_angle(lt_status_now)
-            #print(lt_status_now, "status ", turning_angle, "en rad")
             if tmp_angle != turning_angle:
                 tmp_angle = angle/(len(positions)-x)
                 print("doit break new angle done = ", turning_angle)
@@ -244,7 +236,6 @@ class Car:
             self.obj.keyframe_insert(data_path="rotation_euler", frame=self.curr_frame)
            
             self.curr_frame += frame_rate
-        #print("apply_turn_with_line 1 angle: ", angle, "last tmp_angle = ", tmp_angle)
         self.angle_car += tmp_angle
 
     def turn_right(self, frame_rate):
@@ -304,6 +295,10 @@ class Car:
         self.move_by_dist(obs_size[0], frame_rate, move_dist)
         print("avance", self.curr_frame)
         
+        #print("front_axe: ", self.front_axe, "direction: ", self.direction, "angle_car", self.angle_car)
+        #self.front_axe = const.Y_AXE
+        #self.direction = -1
+        self.front_axe, self.direction = utils.toggle_rad_circle(self.front_axe, self.direction, self.angle_car)
         self.turn_left(frame_rate)
         self.change_direction()
         print("first left ", self.curr_frame)
@@ -314,7 +309,12 @@ class Car:
         self.change_direction()
         print("second left ", self.curr_frame)
         self.move_by_dist(obs_size[0], frame_rate, move_dist)
-        print("avance")
+        print("avance ", self.curr_frame)
+        
+        #print("front_axe: ", self.front_axe, "direction: ", self.direction, "angle_car", self.angle_car)
+        #self.front_axe = const.Y_AXE
+        #self.direction = 1
+        self.front_axe, self.direction = utils.toggle_rad_circle(self.front_axe, self.direction, self.angle_car)
         self.turn_right(frame_rate)
         #self.turn(self.angle_car -np.pi/4,frame_rate, 0) #turn right 
         self.change_direction()
@@ -328,7 +328,7 @@ class Car:
         while True:
             bpy.context.scene.frame_set(self.curr_frame)
             self.rotate(0)
-            print("curr_frame: ", self.curr_frame)
+            print("curr_frame: ", self.curr_frame, "angle_car", self.angle_car)
             if self.ua.detect_obstacle(self.front_axe, move_dist, self.direction):
                 print(f"OBSTACLE DETECTED {self.curr_frame}")
                 self.move_by_dist(20, frame_rate, move_dist, backwards=True)
@@ -338,19 +338,20 @@ class Car:
                #follow_line
                 lt_status_now = self.lf.line_status(self.lf.sensor1_obj, self.lf.sensor2_obj, self.lf.sensor3_obj, self.lf.sensor4_obj, self.lf.sensor5_obj, self.lf.trajectoire)
                 if lt_status_now == [1, 1, 1, 1, 1]:
-                    print("STOP")
+                    print("STOP")  #line follower check for end
                     break
                 turning_angle = self.lf.line_follow_angle(lt_status_now)
+                # TODO :if off track : desaccelere
                 self.turn(turning_angle, frame_rate, 1)
                 
                 #print(self.angle_car)
                 self.change_direction()
-                self.move(move_dist) # TODO add line follower move conditions
+                self.move(move_dist)
 
             self.curr_frame += frame_rate
             count += 1
 
-            if count > 40:
+            if count > 80:
                 # Trajectory end (TODO add line follower check for end)
                 break
 
@@ -360,7 +361,7 @@ def main():
     frame_rate = 2
     front_axe = const.X_AXE
     direction = 1
-    max_speed = 1.23#0.297 * 100 / 24 
+    max_speed =1 #0.297 * 100 / 24 
     total_turning = 0
 
     c = Car("car", "obstacles","road1", front_axe, direction, max_speed, total_turning)

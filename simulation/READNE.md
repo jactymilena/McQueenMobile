@@ -4,4 +4,4 @@ Pour tester la simulation du véhicule, il faut dabord modifier les varibles `fr
 
 Les ranges de détection du véhicule se trouvent dans le fichier `simulation/constants.py`. Pour démarrer la simulation, il suffit de partir le fichier `simulation/main.py` dans Blender.
 
-Le détecteur de ligne du véhicule a besoin de 5 objects `sensor` et d'une courbe `trajectoire`.
+Le détecteur de ligne du véhicule a besoin de 5 objects `sensor` attacher à l'objet `car` et d'une courbe `trajectoire` plate dans l'axe des z. Les `sensor` doivent être allongé pour faire `overlap` avec la `trajectoire`.
