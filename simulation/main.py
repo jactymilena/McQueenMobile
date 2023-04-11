@@ -62,6 +62,7 @@ class Line_following:
         b_step = np.pi/10  # 10
         c_step = np.pi/6 # 30  degré
         d_step = np.pi/4 #  45 degré
+        off_track = False
 
         # Angle calculate
         if	lt_status_now == [0,0,1,0,0]:
@@ -84,9 +85,11 @@ class Line_following:
     # turn left
         elif lt_status_now in ([0,0,1,1,0],[0,0,0,1,0],[0,0,0,1,1],[0,0,0,0,1]):
             self.last_angle = step/4
+        elif lt_status_now == [0,0,0,0,0]
+            off_track = True
 
         
-        return self.last_angle
+        return self.last_angle, off_track
 
 class Ultrasonic_avoidance:
 
@@ -127,7 +130,7 @@ class Car:
         self.curr_frame = 0
         self.max_speed = max_speed
         self.is_dec = False
-        self.is_acc = False
+        self.is_acc = True
         self.angle_car = total_turning
         self.ua = Ultrasonic_avoidance(obs_name)
         self.lf = Line_following(traject_name)
@@ -140,7 +143,7 @@ class Car:
             self.curr_frame += frame_rate
 
 
-    def move(self, move_dist, backwards=False, acc=True, decelerate=False)):
+    def move(self, move_dist, backwards=False):
         new_pos = self.obj.location 
         move_dist = move_dist if not backwards else -move_dist
         new_pos[const.X_AXE] += move_dist*np.cos(self.angle_car)
@@ -268,13 +271,39 @@ class Car:
         else:
             self.apply_turn(positions, rotations, frame_rate)
 
+#fonction not use
+    def accelerate(self):
+        self.speed = self.speed + (const.ACC_RATE * const.ACC_TIME) * (-1 if self.is_dec else 1)
+        return self.speed
+    
+        #factor = 1/5
+        #acc = (goal_speed - curr_speed) * factor
+        #return acc
+    
+    def check_acceleration(self):
+        can_acc = False
+        if self.is_dec:
+            can_acc = self.speed > 0
+        else:
+            self.is_dec = False
+            
+        if self.is_acc:
+            can_acc = self.speed < const.SPEED_RATE
+        else:
+            self.is_acc = False
+        
+        print("can_acc " + str(can_acc))
+        
+        #if can_acc:
+            # print("time.time()" + str(time.time()) + " start_time_acc " + str(self.start_time_acc))
+         #   if np.abs(time.time() - self.start_time_acc) >= const.ACC_TIME:
+         #       self.start_time_acc = time.time()
+         #       return True
+        
+        return can_acc     
 
-    def accelerate(curr_speed, goal_speed):
-        factor = 1/5
-        acc = (goal_speed - curr_speed) * factor
-        return acc
 
-
+#fonction not use
     def speed(frames, move_dist):
         seconds = utils.frames_to_seconds(frames)
         current_speed = move_dist / seconds
@@ -327,12 +356,17 @@ class Car:
                 if lt_status_now == [1, 1, 1, 1, 1]:
                     print("STOP")  #line follower check for end
                     break
-                turning_angle = self.lf.line_follow_angle(lt_status_now)
-                # TODO :if off track : desaccelere
+                turning_angle, off_track = self.lf.line_follow_angle(lt_status_now)
+                if off_track : self.is_dec = True
                 self.turn(turning_angle, frame_rate, 1)
                 
                 self.change_direction()
                 self.move(move_dist)
+            
+            if self.check_acceleration():
+                move_dist = self.accelerate()
+                print("accelerate ", const.ACC_RATE * const.ACC_TIME, " speed ", move_dist)
+               # self.apply_speed()
 
             self.curr_frame += frame_rate
             count += 1
@@ -343,7 +377,7 @@ class Car:
 
 
 def main():
-    move_dist = 2
+    move_dist = 0.1
     frame_rate = 2
     front_axe = const.X_AXE
     direction = 1
