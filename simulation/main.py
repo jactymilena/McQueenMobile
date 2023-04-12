@@ -280,7 +280,7 @@ class Car:
         tmp_angle = angle
         angle = np.abs(angle)
         dist = angle * rayon
-        frame_total = round(dist/self.speed)
+        frame_total = round(dist*(1/self.speed))
        
         angle_delta = angle/frame_total
 
@@ -304,7 +304,7 @@ class Car:
     def check_acceleration(self):
         can_acc = False
         if self.is_dec:
-            can_acc = self.speed > 0.09
+            can_acc = self.speed > 0.1
         else:
             self.is_dec = False
             
@@ -385,17 +385,17 @@ class Car:
             self.curr_frame += frame_rate
             count += 1
 
-            if count > 400:
+            if count > 300:
                 # Trajectory end (TODO add line follower check for end)
                 break
 
 
 def main():
-    move_dist = 0.1#speed
+    move_dist = 0.01#speed
     frame_rate = 2
     front_axe = const.X_AXE
     direction = 1
-    max_speed = 0.297 * 100 / 24 
+    max_speed = 1#0.297 * 100 / 24 
     total_turning = 0
 
     c = Car("car", "obstacles","road1", front_axe, direction, max_speed, total_turning, move_dist)
