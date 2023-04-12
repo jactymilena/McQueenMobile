@@ -248,7 +248,7 @@ class Car:
             bpy.context.scene.frame_set(self.curr_frame)
             self.rotate(0)
             
-            print("angle_car = ", angle)
+            #print("angle_car = ", angle)
             lt_status_now = self.lf.line_status(self.lf.sensor1_obj, self.lf.sensor2_obj, self.lf.sensor3_obj, self.lf.sensor4_obj, self.lf.sensor5_obj, self.lf.trajectoire )
             turning_angle, off_track = self.lf.line_follow_angle(lt_status_now)
             if tmp_angle != turning_angle:
@@ -276,7 +276,7 @@ class Car:
         tmp_angle = angle
         angle = np.abs(angle)
         dist = angle * rayon
-        frame_total = round(dist/self.max_speed)
+        frame_total = round(dist/self.speed)
        
         angle_delta = angle/frame_total
 
@@ -293,13 +293,13 @@ class Car:
             self.apply_turn(positions, rotations, frame_rate)
 
     def accelerate(self):
-        self.speed = self.speed + 0.05 * (-1 if self.is_dec else 1)
+        self.speed = self.speed + 0.03 * (-1 if self.is_dec else 1)
         return self.speed
     
     def check_acceleration(self):
         can_acc = False
         if self.is_dec:
-            can_acc = self.speed > 0
+            can_acc = self.speed > 0.08
         else:
             self.is_dec = False
             
@@ -336,16 +336,17 @@ class Car:
         self.move_by_dist(obs_size[0]+5, frame_rate, move_dist)
         print("avance", self.curr_frame)
         
+       
         self.turn_left(frame_rate)
         self.change_direction()
         print("first left ", self.curr_frame)
-        self.move_by_dist(obs_size[1]+25 , frame_rate, move_dist)#+ const.ORIGIN_DISTANCE
+        self.move_by_dist(obs_size[1]+20 , frame_rate, move_dist)#+ const.ORIGIN_DISTANCE
         print("avance", self.curr_frame)
         
         self.turn_left(frame_rate)
         self.change_direction()
         print("second left ", self.curr_frame)
-        self.move_by_dist(obs_size[0]+5, frame_rate, move_dist)
+        self.move_by_dist(obs_size[0]/2, frame_rate, move_dist)
         print("avance ", self.curr_frame)
         
         self.turn_right(frame_rate)
@@ -373,8 +374,12 @@ class Car:
                     print("STOP")  #line follower check for end
                     break
                 turning_angle, off_track= self.lf.line_follow_angle(lt_status_now)
-                if off_track : self.is_dec = True
-                else : self.is_acc = True
+                if off_track : 
+                    self.is_dec = True
+                    self.is_acc = False
+                else : 
+                    self.is_acc = True
+                    self.is_dec = False
                 self.turn(turning_angle, frame_rate, 1)
                 
                 self.change_direction()
@@ -388,7 +393,7 @@ class Car:
             self.curr_frame += frame_rate
             count += 1
 
-            if count > 60:
+            if count > 400:
                 # Trajectory end (TODO add line follower check for end)
                 break
 
