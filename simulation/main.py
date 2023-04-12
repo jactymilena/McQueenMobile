@@ -58,10 +58,10 @@ class Line_following:
     
     def line_follow_angle(self, lt_status_now):
         step = 0
-        a_step = np.pi/40 # 3
+        a_step = np.pi/35 # 3
         b_step = np.pi/10  # 10
-        c_step = np.pi/6 # 30  degré
-        d_step = np.pi/4 #  45 degré
+        c_step = np.pi/8 # 30  degré
+        d_step = np.pi/3 #  45 degré
         off_track = False
 
         # Angle calculate
@@ -75,6 +75,7 @@ class Line_following:
             step = c_step
         elif lt_status_now == [1,0,0,0,0] or lt_status_now == [0,0,0,0,1]:
             step = d_step  
+            off_track = True
         
         
         if lt_status_now == [0,0,1,0,0]:
@@ -297,7 +298,7 @@ class Car:
         self.angle_car += tmp_angle
 
     def accelerate(self):
-        self.speed = self.speed + 0.03 * (-1 if self.is_dec else 1)
+        self.speed = self.speed + 0.02 * (-1 if self.is_dec else 1)
         return self.speed
     
     def check_acceleration(self):
@@ -330,12 +331,12 @@ class Car:
         print("axe ", self.front_axe)
         self.turn_right(frame_rate)
         
-        self.move_by_dist(obs_size[0]+5, frame_rate, move_dist)
+        self.move_by_dist(obs_size[0], frame_rate, move_dist)
         print("first left ", self.curr_frame)
         print("axe ", self.front_axe, "direction ", self.direction)
         self.turn_left(frame_rate)
         self.change_direction()
-        self.move_by_dist(obs_size[1]+20 , frame_rate, move_dist)#+ const.ORIGIN_DISTANCE
+        self.move_by_dist(obs_size[1]+15 , frame_rate, move_dist)#+ const.ORIGIN_DISTANCE
         print("second left ", self.curr_frame)
         print("axe ", self.front_axe, "direction ", self.direction)
         self.turn_left(frame_rate)
@@ -384,7 +385,7 @@ class Car:
             self.curr_frame += frame_rate
             count += 1
 
-            if count > 100:
+            if count > 400:
                 # Trajectory end (TODO add line follower check for end)
                 break
 
