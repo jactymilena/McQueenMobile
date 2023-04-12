@@ -122,16 +122,16 @@ class Ultrasonic_avoidance:
 
 class Car:
 
-    def __init__(self, car_name, obs_name, traject_name, front_axe, direction, max_speed, total_turning):
+    def __init__(self, car_name, obs_name, traject_name, front_axe, direction, max_speed, total_turning, speed):
         self.obj = bpy.data.objects[car_name]
         self.rotation_axe = const.Z_AXE
         self.front_axe = front_axe
         self.direction = direction
         self.curr_frame = 0
         self.max_speed = max_speed
-        #self.speed = 2
-        #self.is_dec = False
-        #self.is_acc = True
+        self.speed = speed
+        self.is_dec = False
+        self.is_acc = True
         self.angle_car = total_turning
         self.ua = Ultrasonic_avoidance(obs_name)
         self.lf = Line_following(traject_name)
@@ -198,16 +198,16 @@ class Car:
     
     def change_direction(self):
         
-        #if ((self.angle_car > np.pi) and (self.angle_car < np.pi*3/2)):
-        if ((self.angle_car < -np.pi) and (self.angle_car > -np.pi*3/2)) or ((self.angle_car > np.pi) and (self.angle_car < np.pi*3/2)):
+        if ((self.angle_car > np.pi) and (self.angle_car < np.pi*3/2)):
+        #if ((self.angle_car < -np.pi) and (self.angle_car > -np.pi*3/2)) or ((self.angle_car > np.pi) and (self.angle_car < np.pi*3/2)):
             self.front_axe = const.X_AXE
             self.direction = -1
-        #elif ((self.angle_car > np.pi*3/2) and (self.angle_car < np.pi*2)):
-        elif ((self.angle_car < -np.pi/2) and (self.angle_car > -np.pi)) or ((self.angle_car > np.pi*3/2) and (self.angle_car < np.pi*2)):
+        elif ((self.angle_car > np.pi*3/2) and (self.angle_car < np.pi*2)):
+        #elif ((self.angle_car < -np.pi/2) and (self.angle_car > -np.pi)) or ((self.angle_car > np.pi*3/2) and (self.angle_car < np.pi*2)):
             self.front_axe = const.Y_AXE
             self.direction = -1
-        #elif ((self.angle_car > np.pi/2) and (self.angle_car < np.pi)):
-        elif ((self.angle_car > np.pi/2) and (self.angle_car  > np.pi)) or ((self.angle_car < -np.pi*3/2) and (self.angle_car > -np.pi*2)):
+        elif ((self.angle_car > np.pi/2) and (self.angle_car < np.pi)):
+        #elif ((self.angle_car > np.pi/2) and (self.angle_car  > np.pi)) or ((self.angle_car < -np.pi*3/2) and (self.angle_car > -np.pi*2)):
             self.front_axe = const.Y_AXE
             self.direction = 1
         else: 
@@ -215,8 +215,8 @@ class Car:
             self.direction = 1
         if self.angle_car > 2*np.pi : # or self.angle_car > -2*np.pi:
             self.angle_car = self.angle_car - (2*np.pi)
-        #elif self.angle_car < 0:
-        elif self.angle_car < -2*np.pi:
+        elif self.angle_car < 0:
+        #elif self.angle_car < -2*np.pi:
             self.angle_car = self.angle_car + (2*np.pi)
 
     
@@ -293,7 +293,7 @@ class Car:
             self.apply_turn(positions, rotations, frame_rate)
 
     def accelerate(self):
-        self.speed = self.speed + 0.1 * (-1 if self.is_dec else 1)
+        self.speed = self.speed + 0.05 * (-1 if self.is_dec else 1)
         return self.speed
     
     def check_acceleration(self):
@@ -373,16 +373,16 @@ class Car:
                     print("STOP")  #line follower check for end
                     break
                 turning_angle, off_track= self.lf.line_follow_angle(lt_status_now)
-                #if off_track : self.is_dec = True
-               # else : self.is_acc = True
+                if off_track : self.is_dec = True
+                else : self.is_acc = True
                 self.turn(turning_angle, frame_rate, 1)
                 
                 self.change_direction()
                 self.move(move_dist)
             
-            #if self.check_acceleration():
-                #move_dist = self.accelerate()
-              #  print("accelerate max", self.max_speed, " speed ", move_dist)
+            if self.check_acceleration():
+                move_dist = self.accelerate()
+                print("accelerate max", self.max_speed, " speed ", move_dist)
                # self.apply_speed()
 
             self.curr_frame += frame_rate
@@ -394,14 +394,14 @@ class Car:
 
 
 def main():
-    move_dist = 2
+    move_dist = 0.1#speed
     frame_rate = 2
     front_axe = const.X_AXE
     direction = 1
-    max_speed = 1#0.297 * 100 / 24 
+    max_speed = 0.297 * 100 / 24 
     total_turning = 0
 
-    c = Car("car", "obstacles","road1", front_axe, direction, max_speed, total_turning)
+    c = Car("car", "obstacles","road1", front_axe, direction, max_speed, total_turning, move_dist)
     c.run(move_dist, frame_rate)
     
 
