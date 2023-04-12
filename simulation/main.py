@@ -159,6 +159,7 @@ class Car:
 
 
     def movement_points(self, angle_delta, rayon, frame_total, turn_direction):
+        # turn_direction toujours a 1
         axe2 = utils.toggle_axe(self.front_axe)
         old_pos = self.obj.location
         new_pos = copy.deepcopy(old_pos)
@@ -170,7 +171,7 @@ class Car:
             
             new_pos[self.front_axe] = old_pos[self.front_axe] + y*self.direction
             
-            if ((self.front_axe == const.Y_AXE) and (turn_direction == const.LEFT)) or ((self.front_axe == const.X_AXE) and (turn_direction == const.RIGHT)):
+            if ((self.front_axe == const.X_AXE) and (turn_direction == const.RIGHT)):#((self.front_axe == const.Y_AXE) and (turn_direction == const.LEFT)) or 
                 new_pos[axe2] = old_pos[axe2] - (rayon-x)*self.direction
             else:
                 new_pos[axe2] = old_pos[axe2] + (rayon-x)*self.direction
@@ -181,6 +182,7 @@ class Car:
 
 
     def rotation_points(self, angle_delta, frame_total, turn_direction):
+         # turn_direction toujours a 1
         old_rot = self.obj.rotation_euler
         rotation_array = []
 
@@ -199,38 +201,32 @@ class Car:
     def change_direction(self):
         
         if ((self.angle_car > np.pi) and (self.angle_car < np.pi*3/2)):
-        #if ((self.angle_car < -np.pi) and (self.angle_car > -np.pi*3/2)) or ((self.angle_car > np.pi) and (self.angle_car < np.pi*3/2)):
             self.front_axe = const.X_AXE
             self.direction = -1
         elif ((self.angle_car > np.pi*3/2) and (self.angle_car < np.pi*2)):
-        #elif ((self.angle_car < -np.pi/2) and (self.angle_car > -np.pi)) or ((self.angle_car > np.pi*3/2) and (self.angle_car < np.pi*2)):
             self.front_axe = const.Y_AXE
             self.direction = -1
         elif ((self.angle_car > np.pi/2) and (self.angle_car < np.pi)):
-        #elif ((self.angle_car > np.pi/2) and (self.angle_car  > np.pi)) or ((self.angle_car < -np.pi*3/2) and (self.angle_car > -np.pi*2)):
             self.front_axe = const.Y_AXE
             self.direction = 1
         else: 
             self.front_axe = const.X_AXE
             self.direction = 1
-        if self.angle_car > 2*np.pi : # or self.angle_car > -2*np.pi:
+        if self.angle_car > 2*np.pi :
             self.angle_car = self.angle_car - (2*np.pi)
         elif self.angle_car < 0:
-        #elif self.angle_car < -2*np.pi:
             self.angle_car = self.angle_car + (2*np.pi)
 
-    
+    #fonction non use
     def init_acceleration(self, decelerate=False):
         if decelerate:
             if not self.is_dec:
                 self.is_dec = True
                 self.is_acc = False
-                #self.start_time_acc = time.time()
         else:
             if not self.is_acc:
                 self.is_acc = True
                 self.is_dec = False
-              #  self.start_time_acc = time.time()
         
 
     def apply_turn(self, positions, rotations, frame_rate):
@@ -248,7 +244,6 @@ class Car:
             bpy.context.scene.frame_set(self.curr_frame)
             self.rotate(0)
             
-            #print("angle_car = ", angle)
             lt_status_now = self.lf.line_status(self.lf.sensor1_obj, self.lf.sensor2_obj, self.lf.sensor3_obj, self.lf.sensor4_obj, self.lf.sensor5_obj, self.lf.trajectoire )
             turning_angle, off_track = self.lf.line_follow_angle(lt_status_now)
             if tmp_angle != turning_angle:
@@ -307,15 +302,7 @@ class Car:
             can_acc = self.speed < self.max_speed
         else:
             self.is_acc = False
-        
-        #print("can_acc " + str(can_acc))
-        
-        #if can_acc:
-            # print("time.time()" + str(time.time()) + " start_time_acc " + str(self.start_time_acc))
-         #   if np.abs(time.time() - self.start_time_acc) >= const.ACC_TIME:
-         #       self.start_time_acc = time.time()
-         #       return True
-        
+            
         return can_acc     
 
 
@@ -332,41 +319,32 @@ class Car:
     def obstacle_avoidance(self, frame_rate, move_dist, obs_size):
         self.turn_right(frame_rate)
         self.change_direction()
-        print("first right ", self.curr_frame)
         self.move_by_dist(obs_size[0]+5, frame_rate, move_dist)
-        print("avance", self.curr_frame)
-        
        
         self.turn_left(frame_rate)
         self.change_direction()
-        print("first left ", self.curr_frame)
         self.move_by_dist(obs_size[1]+20 , frame_rate, move_dist)#+ const.ORIGIN_DISTANCE
-        print("avance", self.curr_frame)
         
         self.turn_left(frame_rate)
         self.change_direction()
-        print("second left ", self.curr_frame)
         self.move_by_dist(obs_size[0]/2, frame_rate, move_dist)
-        print("avance ", self.curr_frame)
         
         self.turn_right(frame_rate)
         self.change_direction()
-        print("second right ", self.curr_frame)
-        # TODO : ajouter une condition au virage pour qu'il soit effectue seulement si la ligne est detectee (dans run pas ici)
 
 
-    def run(self, move_dist, frame_rate):
+    def run(self, frame_rate):
         count = 0
-        turning_angle = 0
+        #turning_angle = 0
         while True:
             bpy.context.scene.frame_set(self.curr_frame)
             self.rotate(0)
             print("curr_frame: ", self.curr_frame, "angle_car", self.angle_car)
-            if self.ua.detect_obstacle(self.front_axe, move_dist, self.direction):
+            if self.ua.detect_obstacle(self.front_axe, self.speed, self.direction):
                 print(f"OBSTACLE DETECTED {self.curr_frame}")
-                self.move_by_dist(20, frame_rate, move_dist, backwards=True)
+                self.move_by_dist(20, frame_rate, self.speed, backwards=True)
                 self.stop(2)
-                self.obstacle_avoidance(frame_rate, move_dist, [10, 10])
+                self.obstacle_avoidance(frame_rate, self.speed, [10, 10])
             else:
                #follow_line
                 lt_status_now = self.lf.line_status(self.lf.sensor1_obj, self.lf.sensor2_obj, self.lf.sensor3_obj, self.lf.sensor4_obj, self.lf.sensor5_obj, self.lf.trajectoire)
@@ -383,23 +361,22 @@ class Car:
                 self.turn(turning_angle, frame_rate, 1)
                 
                 self.change_direction()
-                self.move(move_dist)
+                self.move(self.speed)
             
             if self.check_acceleration():
                 move_dist = self.accelerate()
-                print("accelerate max", self.max_speed, " speed ", move_dist)
-               # self.apply_speed()
+                print("accelerate max", self.max_speed, " speed ", self.speed)
 
             self.curr_frame += frame_rate
             count += 1
 
-            if count > 400:
+            if count > 450:
                 # Trajectory end (TODO add line follower check for end)
                 break
 
 
 def main():
-    move_dist = 0.1#speed
+    move_dist = 0.05#speed
     frame_rate = 2
     front_axe = const.X_AXE
     direction = 1
@@ -407,7 +384,7 @@ def main():
     total_turning = 0
 
     c = Car("car", "obstacles","road1", front_axe, direction, max_speed, total_turning, move_dist)
-    c.run(move_dist, frame_rate)
+    c.run(frame_rate)
     
 
 if __name__ == '__main__':
