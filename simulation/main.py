@@ -225,8 +225,9 @@ class Car:
     def apply_turn_with_line(self,positions, rotations, angle, frame_rate):
         tmp_angle = angle
         for x in range(len(positions)):
-            self.rotate(0)
             bpy.context.scene.frame_set(self.curr_frame)
+            self.rotate(0)
+            
             
             lt_status_now = self.lf.line_status(self.lf.sensor1_obj, self.lf.sensor2_obj, self.lf.sensor3_obj, self.lf.sensor4_obj, self.lf.sensor5_obj, self.lf.trajectoire )
             turning_angle = self.lf.line_follow_angle(lt_status_now)
@@ -365,13 +366,13 @@ class Car:
             
             if self.check_acceleration():
                 move_dist = self.accelerate()
-                print("accelerate ", const.ACC_RATE * const.ACC_TIME, " speed ", move_dist)
+                print("accelerate speed ", move_dist)
                # self.apply_speed()
-
+            print("accelerate ", const.ACC_RATE * const.ACC_TIME, " speed ", move_dist)
             self.curr_frame += frame_rate
             count += 1
 
-            if count > 70:
+            if count > 40:
                 # Trajectory end (TODO add line follower check for end)
                 break
 
