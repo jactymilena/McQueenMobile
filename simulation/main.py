@@ -171,7 +171,7 @@ class Car:
             
             new_pos[self.front_axe] = old_pos[self.front_axe] + y*self.direction
             
-            if ((self.front_axe == const.X_AXE) and (turn_direction == const.RIGHT)):#((self.front_axe == const.Y_AXE) and (turn_direction == const.LEFT)) or 
+            if ((self.front_axe == const.Y_AXE) and (turn_direction == const.LEFT)) or ((self.front_axe == const.X_AXE) and (turn_direction == const.RIGHT)): 
                 new_pos[axe2] = old_pos[axe2] - (rayon-x)*self.direction
             else:
                 new_pos[axe2] = old_pos[axe2] + (rayon-x)*self.direction
@@ -199,23 +199,28 @@ class Car:
         return rotation_array
     
     def change_direction(self):
-        
-        if ((self.angle_car > np.pi) and (self.angle_car < np.pi*3/2)):
+        if self.angle_car > 2*np.pi :
+            self.angle_car = self.angle_car - (2*np.pi)
+        elif (self.angle_car < 0):
+            self.angle_car = self.angle_car + (2*np.pi)
+            
+            
+        if ((self.angle_car > 3.14) and (self.angle_car < np.pi*3/2)):
             self.front_axe = const.X_AXE
             self.direction = -1
-        elif ((self.angle_car > np.pi*3/2) and (self.angle_car < np.pi*2)):
+            print("change direction -x")
+        elif ((self.angle_car >= np.pi*3/2) and (self.angle_car < np.pi*2)):
             self.front_axe = const.Y_AXE
             self.direction = -1
-        elif ((self.angle_car > np.pi/2) and (self.angle_car < np.pi)):
+            print("change direction -y")
+        elif ((self.angle_car >= np.pi/2) and (self.angle_car < np.pi)):
             self.front_axe = const.Y_AXE
             self.direction = 1
+            print("change direction y")
         else: 
             self.front_axe = const.X_AXE
             self.direction = 1
-        if self.angle_car > 2*np.pi :
-            self.angle_car = self.angle_car - (2*np.pi)
-        elif self.angle_car < 0:
-            self.angle_car = self.angle_car + (2*np.pi)
+       
 
     #fonction non use
     def init_acceleration(self, decelerate=False):
@@ -244,27 +249,30 @@ class Car:
             bpy.context.scene.frame_set(self.curr_frame)
             self.rotate(0)
             
-            lt_status_now = self.lf.line_status(self.lf.sensor1_obj, self.lf.sensor2_obj, self.lf.sensor3_obj, self.lf.sensor4_obj, self.lf.sensor5_obj, self.lf.trajectoire )
-            turning_angle, off_track = self.lf.line_follow_angle(lt_status_now)
-            if tmp_angle != turning_angle:
-                tmp_angle = angle/(len(positions)-x)
-                print("doit break new angle done = ", turning_angle)
-                break
             self.obj.location = positions[x]
             self.obj.rotation_euler = rotations[x]
             self.obj.keyframe_insert(data_path="location", frame=self.curr_frame)
             self.obj.keyframe_insert(data_path="rotation_euler", frame=self.curr_frame)
            
             self.curr_frame += frame_rate
-        self.angle_car += tmp_angle
+            
+            lt_status_now = self.lf.line_status(self.lf.sensor1_obj, self.lf.sensor2_obj, self.lf.sensor3_obj, self.lf.sensor4_obj, self.lf.sensor5_obj, self.lf.trajectoire )
+            turning_angle, off_track = self.lf.line_follow_angle(lt_status_now)
+            if tmp_angle != turning_angle:
+                #tmp_angle = angle/(len(positions)-x)
+                print("doit break new angle done = ", turning_angle)
+                break
+            
 
     def turn_right(self, frame_rate):
         self.turn(-np.pi/2, frame_rate,0)
-        self.angle_car -= np.pi/2
+        #self.angle_car -= np.pi/2
+        self.change_direction()
 
     def turn_left(self, frame_rate): 
         self.turn(np.pi/2, frame_rate, 0)
-        self.angle_car += np.pi/2
+        #self.angle_car += np.pi/2
+        self.change_direction()
 
     def turn(self, angle, frame_rate, isline, rayon=12):
         turn_direction = const.RIGHT if angle < 0 else const.LEFT
@@ -283,9 +291,10 @@ class Car:
 
         if isline:
             self.apply_turn_with_line(positions, rotations, tmp_angle,frame_rate)
-            
+             
         else:
             self.apply_turn(positions, rotations, frame_rate)
+        self.angle_car += tmp_angle
 
     def accelerate(self):
         self.speed = self.speed + 0.03 * (-1 if self.is_dec else 1)
@@ -294,7 +303,7 @@ class Car:
     def check_acceleration(self):
         can_acc = False
         if self.is_dec:
-            can_acc = self.speed > 0.08
+            can_acc = self.speed > 0.09
         else:
             self.is_dec = False
             
@@ -317,18 +326,23 @@ class Car:
 
     
     def obstacle_avoidance(self, frame_rate, move_dist, obs_size):
+        print("first right ", self.curr_frame)
+        print("axe ", self.front_axe)
         self.turn_right(frame_rate)
-        self.change_direction()
+        
         self.move_by_dist(obs_size[0]+5, frame_rate, move_dist)
-       
+        print("first left ", self.curr_frame)
+        print("axe ", self.front_axe, "direction ", self.direction)
         self.turn_left(frame_rate)
         self.change_direction()
         self.move_by_dist(obs_size[1]+20 , frame_rate, move_dist)#+ const.ORIGIN_DISTANCE
-        
+        print("second left ", self.curr_frame)
+        print("axe ", self.front_axe, "direction ", self.direction)
         self.turn_left(frame_rate)
         self.change_direction()
-        self.move_by_dist(obs_size[0]/2, frame_rate, move_dist)
+        self.move_by_dist(obs_size[0], frame_rate, move_dist)
         
+        print("second right ", self.curr_frame)
         self.turn_right(frame_rate)
         self.change_direction()
 
@@ -358,8 +372,8 @@ class Car:
                 else : 
                     self.is_acc = True
                     self.is_dec = False
+                    
                 self.turn(turning_angle, frame_rate, 1)
-                
                 self.change_direction()
                 self.move(self.speed)
             
@@ -370,13 +384,13 @@ class Car:
             self.curr_frame += frame_rate
             count += 1
 
-            if count > 450:
+            if count > 100:
                 # Trajectory end (TODO add line follower check for end)
                 break
 
 
 def main():
-    move_dist = 0.05#speed
+    move_dist = 0.1#speed
     frame_rate = 2
     front_axe = const.X_AXE
     direction = 1
