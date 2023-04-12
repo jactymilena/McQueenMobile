@@ -190,27 +190,20 @@ class Car:
                 self.ua.clear_measures()
                 self.end_obs_avoidance = True
                 
-            #else:
-            #self.move(backwards=False, acc=True,decelerate=False)
-
-            # read line sensor
+            # Read line sensor
             turning_angle, turn_direction, is_off_track = self.lf.follow_line(const.LINE_STEP)
 
-            #if(turn_direction != 0)
-                
-            # Trajetory end
-            if((turning_angle == const.END_LINE) and not self.end_obs_avoidance):
-                print('Trajectory end')
-                self.stop()
-                break
-            # else:
-
-
-
-            if self.end_obs_avoidance and is_off_track: # and on a pas trouv/ la ligne 
+            if self.end_obs_avoidance and is_off_track:
                 self.fw.turn_straight()
-            else: 
+            else:
+                # Trajetory end
+                if turning_angle == const.END_LINE:
+                    print('Trajectory end')
+                    self.stop()
+                    break
+
                 self.fw.turn(turning_angle)
+                self.end_obs_avoidance = False
                 
                 # if self.end_obs_avoidance:
                 #     self.end_obs_avoidance = False
@@ -220,31 +213,31 @@ class Car:
                 #self.end_obs_avoidance = False
                 
 
-            if (turn_direction == const.LEFT) and not self.end_obs_avoidance: # if LEFT, left wheel slower
-                print('-1 : turning left')
-                
-                self.bw.right_speed(70)
-                self.bw.left_speed(40)
-                self.turn_count += 1
-                
-                if self.turn_count >= 7:
-                    self.bw.left_forward(False)
-                
-            elif (turn_direction == const.RIGHT) and not self.end_obs_avoidance: # if RIGHT, right wheel slower
-                print('1')
-                # self.bw.right_speed(0)
-                
-                self.bw.right_speed(40)
-                self.bw.left_speed(70)
-                self.turn_count += 1
-                
-                if self.turn_count >= 7:
-                    self.bw.right_forward(False)
-                
-            else:
-                # turn if end avoidance
-                self.turn_count = 0
-                self.move(backwards=False, acc=True,decelerate=False)
+                if turn_direction == const.LEFT: # if LEFT, left wheel slower
+                    print('-1 : turning left')
+                    
+                    self.bw.right_speed(70)
+                    self.bw.left_speed(40)
+                    self.turn_count += 1
+                    
+                    if self.turn_count >= 7:
+                        self.bw.left_forward(False)
+                    
+                elif turn_direction == const.RIGHT: # if RIGHT, right wheel slower
+                    print('1')
+                    # self.bw.right_speed(0)
+                    
+                    self.bw.right_speed(40)
+                    self.bw.left_speed(70)
+                    self.turn_count += 1
+                    
+                    if self.turn_count >= 7:
+                        self.bw.right_forward(False)
+                    
+                else:
+                    # turn if end avoidance
+                    self.turn_count = 0
+                    self.move(backwards=False, acc=True,decelerate=False)
             
             
             if self.check_acceleration():
