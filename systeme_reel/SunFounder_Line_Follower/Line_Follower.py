@@ -12,6 +12,8 @@ class Line_Follower(object):
 		self.bus = smbus.SMBus(1)
 		self.address = address
 		self._references = references
+		self.last_angle = 0
+		self.last_direction = 1
 
 
 	def read_raw(self):
@@ -107,13 +109,16 @@ class Line_Follower(object):
 	def follow_line(self, step_angles):
 		self.references = const.LINE_REFERENCES
 		lt_status_now = self.read_digital()
+		turn_direction = 0 # 0 (no), 1 (right), -1 (left)
 
 
-		if	lt_status_now == [1,1,1,1,1]: return -1
+		#if	(lt_status_now == [1,1,1,1,1]) or (lt_status_now == [1,1,1,0,0]) or (lt_status_now == [0,0,1,1,1]):
+		if sum(lt_status_now)  >= 3:
+			return -1, turn_direction
 			
 
 		turning_angle = 90
-
+		print(lt_status_now)
 		if	lt_status_now == [0,0,1,0,0]:
 			step = 0	
 		elif lt_status_now == [0,1,1,0,0] or lt_status_now == [0,0,1,1,0]:
@@ -134,16 +139,25 @@ class Line_Follower(object):
 		elif lt_status_now in ([0,1,1,0,0],[0,1,0,0,0],[1,1,0,0,0],[1,0,0,0,0]):
 			# off_track_count = 0
 			turning_angle = int(90 - step)
+			self.last_direction = -1
+                        
 		# turn left
 		elif lt_status_now in ([0,0,1,1,0],[0,0,0,1,0],[0,0,0,1,1],[0,0,0,0,1]):
 			# off_track_count = 0
 			turning_angle = int(90 + step)
+			self.last_direction = 1
 		elif lt_status_now == [0,0,0,0,0]:
-			turning_angle = 0
+			#turning_angle = self.last_angle
+			turning_angle = 90 + (const.TURNING_ANGLE * self.last_direction)
+			turn_direction = self.last_direction
 		else:
-			turning_angle = 0
-
-		return turning_angle
+			turning_angle = 90
+                
+                # self.last_angle = turning_angle 
+                
+        # print('turning_angle ' + str(turning_angle))
+                
+		return turning_angle, turn_direction
 
 
 	@property

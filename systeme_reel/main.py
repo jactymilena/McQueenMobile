@@ -25,7 +25,7 @@ class Car:
     
     def move_by_dist(self, dist, backwards=False):
         self.fw.turn_straight()
-        sec = dist/(const.FORWARD_SPEED*const.SPEED_RATE/100.0)
+        sec = dist/(const.FORWARD_SPEED*const.MAX_SPEED_RATE/100.0)
        
         self.move(sec, backwards, acc=False)
         
@@ -57,12 +57,12 @@ class Car:
         self.bw.speed = const.FORWARD_SPEED
         time.sleep(sec)
 
-
+        
     def turn(self, angle):
         self.is_acc = False
         self.fw.turn(angle)
         self.bw.forward()
-        # self.bw.speed = const.FORWARD_SPEED
+        self.bw.speed = const.FORWARD_SPEED
         time.sleep(1)
 
 
@@ -73,16 +73,45 @@ class Car:
         time.sleep(sec)
 
 
+    #def obstacle_avoidance(self):
+     #   self.turn_right()
+      #  self.move_by_dist(5)
+       # self.turn_left()
+        #self.move_by_dist(40)
+        #self.turn_left()
+        #self.move_by_dist(40)
+        #self.turn_right()
+
     def obstacle_avoidance(self):
-        self.turn_right()
-        self.move_by_dist(5)
-        self.turn_left()
-        self.move_by_dist(40)
-        self.turn_left()
-        self.move_by_dist(40)
-        self.turn_right()
-
-
+        temps_droite = 1
+        temps_gauche = 1*0.65
+        virage_droite = 130
+        virage_gauche = 50
+        
+        # droite
+        self.turn(virage_droite)
+        time.sleep(temps_droite)
+        # tout droit
+        self.turn(90)
+        time.sleep(0.1)
+        # gauche
+        self.turn(virage_gauche)
+        time.sleep(temps_gauche)
+        
+        # tout droit
+        self.turn(90)
+        time.sleep(0.7)
+        
+        # gauche
+        self.turn(virage_gauche)
+        time.sleep(temps_gauche)
+        # tout droit
+        self.turn(90)
+        time.sleep(0.1)
+        # droite
+        self.turn(virage_droite)
+        time.sleep(temps_droite)
+        
 
             
     def accelerate(self):
@@ -106,7 +135,7 @@ class Car:
         
     
     def apply_speed(self):
-        percentage_speed = (self.speed/const.SPEED_RATE)*100.0
+        percentage_speed = (self.speed/const.MAX_SPEED_RATE)*100.0
         if percentage_speed > 100.0:
             self.bw.speed = 100
         elif percentage_speed < 0:
@@ -123,11 +152,11 @@ class Car:
             self.is_dec = False
             
         if self.is_acc:
-            can_acc = self.speed < const.SPEED_RATE
+            can_acc = self.speed < const.MAX_SPEED_RATE*(const.FORWARD_SPEED/100.0)
         else:
             self.is_acc = False
         
-        print("can_acc " + str(can_acc))
+        # print("can_acc " + str(can_acc))
         
         if can_acc:
             # print("time.time()" + str(time.time()) + " start_time_acc " + str(self.start_time_acc))
@@ -144,31 +173,53 @@ class Car:
         # self.ua.calibrate()
         while True:
             print("acc " + str(self.is_acc) + " speed " + str(self.speed))
-            if self.ua.detect_obstacle():
-                print("OBSTACLE DETECTED")
-                self.stop(2)
-                self.move_by_dist(20, backwards=True)
+            #if self.ua.detect_obstacle():
+             #   print("OBSTACLE DETECTED")
+             #   self.stop(2)
+             #   self.move_by_dist(20, backwards=True)
                 # self.move(1, backwards=True, acc=False)
-                self.stop(1)
-                self.obstacle_avoidance()
+             ##   self.stop(1)
+             #   self.obstacle_avoidance()
                 # #time.sleep(1)
                 # self.ua.clear_measures()
                 # break
                 
-            else:
-                self.move(backwards=False, acc=True,decelerate=False)
+            #else:
+            #self.move(backwards=False, acc=True,decelerate=False)
 
             
-            turning_angle = self.lf.follow_line(const.LINE_STEP)
+            turning_angle, turn_direction = self.lf.follow_line(const.LINE_STEP)
             
             if(turning_angle == -1):
                 # Trajectory end
+                print('Trajectory end')
                 self.stop()
                 break
             else:
                 self.fw.turn(turning_angle)
-            
+                
 
+            if turn_direction == -1: # if LEFT, left wheel slower
+                print('-1')
+                # self.bw.left_speed = 25
+                # self.bw.right_speed = 50
+                # print(self.bw.right_speed)
+                self.bw.right_speed(50)
+                self.bw.left_speed(40)
+                self.bw.left_forward(False)
+            elif turn_direction == 1: # if RIGHT, right wheel slower
+                print('1')
+                # self.bw.right_speed(0)
+                self.bw.right_speed(40)
+                self.bw.left_speed(50)
+                self.bw.right_forward(False)
+                # self.bw.right_speed = 0
+                #self.bw.right_speed = 0
+                # self.bw.forward()
+            else:
+                self.move(backwards=False, acc=True,decelerate=False)
+            
+            
             if self.check_acceleration():
                 self.accelerate()
                 self.apply_speed()
@@ -185,6 +236,22 @@ class Car:
     
 
     def test(self):
+        
+        self.fw.turn_straight()
+        self.bw.forward()
+        self.bw.speed = const.FORWARD_SPEED
+        time.sleep(2.5)
+        self.stop(1)
+        # self.bw.right_speed = 0
+        # self.bw.left_speed = 0
+       # #self.bw.speed = const.FORWARD_SPEED
+        #self.bw.forward()
+        
+        self.bw.right_speed(const.FORWARD_SPEED)
+        self.bw.left_speed(const.FORWARD_SPEED)
+      
+        time.sleep(2)
+        self.stop()
 
         # self.fw.turn_straight()
         # time.sleep(5)
@@ -208,8 +275,8 @@ class Car:
         #         print("Read distance error.")
 
         # self.move_by_dist(10)
-        self.obstacle_avoidance()
-        self.stop()
+        #self.obstacle_avoidance()
+        #self.stop()
 
         # self.fw.turn_right()
         # self.bw.forward()
@@ -237,7 +304,7 @@ class Car:
 
 def main():
     picar.setup()
-    time.sleep(5)
+    time.sleep(2)
     c = Car()
     try:
         # c.test()

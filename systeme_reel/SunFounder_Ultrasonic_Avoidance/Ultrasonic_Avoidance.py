@@ -24,6 +24,7 @@ class Ultrasonic_Avoidance(object):
 		self.last_measures = []
 		self.measures_index = 0
 
+
 	def distance(self):
 		pulse_end = 0
 		pulse_start = 0
@@ -101,7 +102,6 @@ class Ultrasonic_Avoidance(object):
 
 
 		# if measure + 10 < measures_mean || measure - 10 > measures_mean
-
 
 		if len(self.last_measures) >= 5:
 			index = (self.measures_index) % 5
