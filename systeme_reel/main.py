@@ -21,6 +21,8 @@ class Car:
         self.is_dec = False
         self.is_acc = False
         self.start_time_acc = 0
+        self.turn_count = 0
+        self.end_obs_avoidance = False
         
     
     def move_by_dist(self, dist, backwards=False):
@@ -85,32 +87,37 @@ class Car:
     def obstacle_avoidance(self):
         temps_droite = 1
         temps_gauche = 1*0.65
-        virage_droite = 130
+        # virage_droite = 130
+        virage_droite = 128
         virage_gauche = 50
         
-        # droite
-        self.turn(virage_droite)
-        time.sleep(temps_droite)
-        # tout droit
-        self.turn(90)
-        time.sleep(0.1)
         # gauche
         self.turn(virage_gauche)
         time.sleep(temps_gauche)
+
+        # tout droit
+        self.turn(90)
+        time.sleep(0.1)
+
+        # droite
+        self.turn(virage_droite)
+        time.sleep(temps_droite)
         
         # tout droit
         self.turn(90)
         time.sleep(0.7)
         
-        # gauche
-        self.turn(virage_gauche)
-        time.sleep(temps_gauche)
-        # tout droit
-        self.turn(90)
-        time.sleep(0.1)
         # droite
         self.turn(virage_droite)
-        time.sleep(temps_droite)
+        time.sleep(0.1)
+
+        # # tout droit
+        # self.turn(90)
+        # time.sleep(0.1)
+
+        # droite
+        # self.turn(virage_droite)
+        # time.sleep(temps_droite)
         
 
             
@@ -172,51 +179,71 @@ class Car:
         self.fw.turn_straight()
         # self.ua.calibrate()
         while True:
-            print("acc " + str(self.is_acc) + " speed " + str(self.speed))
-            #if self.ua.detect_obstacle():
-             #   print("OBSTACLE DETECTED")
-             #   self.stop(2)
-             #   self.move_by_dist(20, backwards=True)
-                # self.move(1, backwards=True, acc=False)
-             ##   self.stop(1)
-             #   self.obstacle_avoidance()
-                # #time.sleep(1)
-                # self.ua.clear_measures()
-                # break
+            #print("acc " + str(self.is_acc) + " speed " + str(self.speed))
+            if self.ua.detect_obstacle():
+                print("OBSTACLE DETECTED")
+                self.stop(2)
+                self.move_by_dist(20, backwards=True)
+                self.move(1, backwards=True, acc=False)
+                self.stop(1)
+                self.obstacle_avoidance()
+                self.ua.clear_measures()
+                self.end_obs_avoidance = True
                 
             #else:
             #self.move(backwards=False, acc=True,decelerate=False)
 
-            
-            turning_angle, turn_direction = self.lf.follow_line(const.LINE_STEP)
-            
-            if(turning_angle == -1):
-                # Trajectory end
+            # read line sensor
+            turning_angle, turn_direction, is_off_track = self.lf.follow_line(const.LINE_STEP)
+
+            #if(turn_direction != 0)
+                
+            # Trajetory end
+            if((turning_angle == const.END_LINE) and not self.end_obs_avoidance):
                 print('Trajectory end')
                 self.stop()
                 break
-            else:
+            # else:
+
+
+
+            if self.end_obs_avoidance and is_off_track: # and on a pas trouv/ la ligne 
+                self.fw.turn_straight()
+            else: 
                 self.fw.turn(turning_angle)
                 
+                # if self.end_obs_avoidance:
+                #     self.end_obs_avoidance = False
+                #     self.fw.turn(128)
+                # else: 
+                #    self.fw.turn(turning_angle)
+                #self.end_obs_avoidance = False
+                
 
-            if turn_direction == -1: # if LEFT, left wheel slower
-                print('-1')
-                # self.bw.left_speed = 25
-                # self.bw.right_speed = 50
-                # print(self.bw.right_speed)
-                self.bw.right_speed(50)
+            if (turn_direction == const.LEFT) and not self.end_obs_avoidance: # if LEFT, left wheel slower
+                print('-1 : turning left')
+                
+                self.bw.right_speed(70)
                 self.bw.left_speed(40)
-                self.bw.left_forward(False)
-            elif turn_direction == 1: # if RIGHT, right wheel slower
+                self.turn_count += 1
+                
+                if self.turn_count >= 7:
+                    self.bw.left_forward(False)
+                
+            elif (turn_direction == const.RIGHT) and not self.end_obs_avoidance: # if RIGHT, right wheel slower
                 print('1')
                 # self.bw.right_speed(0)
+                
                 self.bw.right_speed(40)
-                self.bw.left_speed(50)
-                self.bw.right_forward(False)
-                # self.bw.right_speed = 0
-                #self.bw.right_speed = 0
-                # self.bw.forward()
+                self.bw.left_speed(70)
+                self.turn_count += 1
+                
+                if self.turn_count >= 7:
+                    self.bw.right_forward(False)
+                
             else:
+                # turn if end avoidance
+                self.turn_count = 0
                 self.move(backwards=False, acc=True,decelerate=False)
             
             
@@ -227,13 +254,6 @@ class Car:
             time.sleep(0.2)
             count += 1
 
-            # if count > 300:
-            #     self.stop()
-            #     # Trajectory end (TODO add line follower check for end)
-            #     break
-
-
-    
 
     def test(self):
         
@@ -253,58 +273,10 @@ class Car:
         time.sleep(2)
         self.stop()
 
-        # self.fw.turn_straight()
-        # time.sleep(5)
-        # self.fw.turn(90) 
-
-        # threshold = 10
-
-        # while True:
-        #     distance = self.ua.get_distance()
-        #     status = self.ua.less_than(threshold)
-        #     if distance != -1:
-        #         print('distance', distance, 'cm')
-        #         time.sleep(0.2)
-        #     else:
-        #         print(False)
-        #     if status == 1:
-        #         print("Less than %d" % threshold)
-        #     elif status == 0:
-        #         print("Over %d" % threshold)
-        #     else:
-        #         print("Read distance error.")
-
-        # self.move_by_dist(10)
-        #self.obstacle_avoidance()
-        #self.stop()
-
-        # self.fw.turn_right()
-        # self.bw.forward()
-        # self.bw.speed = const.FORWARD_SPEED
-        # # time.sleep(2.5)
-        # # self.fw.turn_straight()
-        # time.sleep(2)
-        # self.stop()
-
-        # turning_angle = 90
-        # # self.fw.turn(turning_angle)
-        # self.fw.turn_right()
-        # self.bw.forward()
-        # self.bw.speed = const.FORWARD_SPEED
-        # time.sleep(5)
-
-        # while True:
-            # self.move(2)
-
-            # if self.check_acceleration():
-            #     self.accelerate()
-            #     self.apply_speed()
-        # self.stop()
-
 
 def main():
     picar.setup()
-    time.sleep(2)
+    time.sleep(5)
     c = Car()
     try:
         # c.test()

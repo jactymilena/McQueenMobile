@@ -102,6 +102,7 @@ class Ultrasonic_Avoidance(object):
 
 
 		# if measure + 10 < measures_mean || measure - 10 > measures_mean
+                # print('allo')
 
 		if len(self.last_measures) >= 5:
 			index = (self.measures_index) % 5
@@ -118,7 +119,7 @@ class Ultrasonic_Avoidance(object):
 
 		measures_mean = sum(self.last_measures) / len(self.last_measures)
 
-		print(self.last_measures)
+		# print(self.last_measures)
 
 		print("mean : " + str(measures_mean))
 		
