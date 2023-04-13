@@ -16,3 +16,10 @@ RIGHT = 1
 LEFT = 0
 
 FRONT_DISTANCE = 4
+
+# SPEED_RATE = 24.0
+SPEED_RATE = 12.0
+
+#acceleration
+ACC_RATE = 5
+ACC_TIME = 0.2
