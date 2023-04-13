@@ -2,7 +2,6 @@ import numpy as np
 import copy
 import time
 import bpy
-from mathutils import Vector
 from mathutils.bvhtree import BVHTree
 
 import sys, os
@@ -26,8 +25,8 @@ class Line_following:
         self.trajectoire = bpy.data.objects[trajectories_name]
         self.last_angle = 0
 
+
     def detect_line(self, sensor, trajectoire):
-        
         copy_sensor = sensor.matrix_world.copy()
         sensor_verts = [copy_sensor @ vertex.co for vertex in sensor.data.vertices]
         sensor_polys = [polygon.vertices for polygon in sensor.data.polygons]    
@@ -39,6 +38,7 @@ class Line_following:
         sensor_bvh_tree = BVHTree.FromPolygons(sensor_verts, sensor_polys)
         traj_bvh_tree = BVHTree.FromPolygons(traj_verts, traj_polys)
         intersections = sensor_bvh_tree.overlap(traj_bvh_tree)
+
         return intersections
     
 
@@ -54,8 +54,10 @@ class Line_following:
             status[3] = 1
         if self.detect_line(sensor5, trajectoire):
             status[4] = 1
+
         return status
     
+
     def line_follow_angle(self, lt_status_now):
         step = 0
         a_step = np.pi/35 # 3
@@ -77,20 +79,19 @@ class Line_following:
             step = d_step  
             off_track = True
         
-        
         if lt_status_now == [0,0,1,0,0]:
             self.last_angle = step
-    # turn right
+        # turn right
         elif lt_status_now in ([0,1,1,0,0],[0,1,0,0,0],[1,1,0,0,0],[1,0,0,0,0]):
             self.last_angle = -step/4
-    # turn left
+        # turn left
         elif lt_status_now in ([0,0,1,1,0],[0,0,0,1,0],[0,0,0,1,1],[0,0,0,0,1]):
             self.last_angle = step/4
         elif lt_status_now == [0,0,0,0,0]:
             off_track = True
-
         
         return self.last_angle , off_track
+
 
 class Ultrasonic_avoidance:
 
@@ -243,6 +244,7 @@ class Car:
             self.obj.keyframe_insert(data_path="rotation_euler", frame=self.curr_frame)
             self.curr_frame += frame_rate
 
+
     def apply_turn_with_line(self,positions, rotations, angle, frame_rate):
         tmp_angle = angle
         off_track = False
@@ -267,13 +269,13 @@ class Car:
 
     def turn_right(self, frame_rate):
         self.turn(-np.pi/2, frame_rate,0)
-        #self.angle_car -= np.pi/2
         self.change_direction()
+
 
     def turn_left(self, frame_rate): 
         self.turn(np.pi/2, frame_rate, 0)
-        #self.angle_car += np.pi/2
         self.change_direction()
+
 
     def turn(self, angle, frame_rate, isline, rayon=12):
         turn_direction = const.RIGHT if angle < 0 else const.LEFT
@@ -297,10 +299,12 @@ class Car:
             self.apply_turn(positions, rotations, frame_rate)
         self.angle_car += tmp_angle
 
+
     def accelerate(self):
         self.speed = self.speed + 0.02 * (-1 if self.is_dec else 1)
         return self.speed
     
+
     def check_acceleration(self):
         can_acc = False
         if self.is_dec:
@@ -316,41 +320,32 @@ class Car:
         return can_acc     
 
 
-#fonction not use
-    def speed(frames, move_dist):
-        seconds = utils.frames_to_seconds(frames)
-        current_speed = move_dist / seconds
-        return current_speed
-
     def stop(self, stop_time):
         time.sleep(stop_time)
 
     
     def obstacle_avoidance(self, frame_rate, move_dist, obs_size):
-        print("first right ", self.curr_frame)
-        print("axe ", self.front_axe)
         self.turn_right(frame_rate)
         
         self.move_by_dist(obs_size[0], frame_rate, move_dist)
-        print("first left ", self.curr_frame)
-        print("axe ", self.front_axe, "direction ", self.direction)
         self.turn_left(frame_rate)
+
         self.change_direction()
-        self.move_by_dist(obs_size[1]+15 , frame_rate, move_dist)#+ const.ORIGIN_DISTANCE
-        print("second left ", self.curr_frame)
-        print("axe ", self.front_axe, "direction ", self.direction)
+
+        self.move_by_dist(obs_size[1]+15 , frame_rate, move_dist)
         self.turn_left(frame_rate)
+
         self.change_direction()
+
         self.move_by_dist(obs_size[0], frame_rate, move_dist)
-        
-        print("second right ", self.curr_frame)
         self.turn_right(frame_rate)
+
         self.change_direction()
 
 
     def run(self, frame_rate):
         count = 0
-        #turning_angle = 0
+        
         while True:
             bpy.context.scene.frame_set(self.curr_frame)
             self.rotate(0)
@@ -361,12 +356,14 @@ class Car:
                 self.stop(2)
                 self.obstacle_avoidance(frame_rate, self.speed, [10, 10])
             else:
-               #follow_line
+                # follow_line
                 lt_status_now = self.lf.line_status(self.lf.sensor1_obj, self.lf.sensor2_obj, self.lf.sensor3_obj, self.lf.sensor4_obj, self.lf.sensor5_obj, self.lf.trajectoire)
+                
                 if lt_status_now == [1, 1, 1, 1, 1]:
-                    print("STOP")  #line follower check for end
+                    print("STOP")  
                     break
-                turning_angle, off_track= self.lf.line_follow_angle(lt_status_now)
+
+                turning_angle, off_track = self.lf.line_follow_angle(lt_status_now)
                 if off_track : 
                     self.is_dec = True
                     self.is_acc = False
@@ -380,22 +377,20 @@ class Car:
             
             if self.check_acceleration():
                 move_dist = self.accelerate()
-                print("accelerate max", self.max_speed, " speed ", self.speed)
 
             self.curr_frame += frame_rate
             count += 1
 
             if count > 300:
-                # Trajectory end (TODO add line follower check for end)
                 break
 
 
 def main():
-    move_dist = 0.01#speed
-    frame_rate = 2
+    move_dist = const.MOVE_DIST
+    frame_rate = const.FRAME_RATE
     front_axe = const.X_AXE
     direction = 1
-    max_speed = 1#0.297 * 100 / 24 
+    max_speed = 1
     total_turning = 0
 
     c = Car("car", "obstacles","road1", front_axe, direction, max_speed, total_turning, move_dist)

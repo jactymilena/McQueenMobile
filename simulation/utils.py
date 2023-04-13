@@ -1,5 +1,6 @@
 import constants as const
 
+
 def frames_to_seconds(frames):
     # 24 frames per second
     return frames/24
@@ -12,6 +13,7 @@ def toggle_axe(curr_axe):
 def toggle_direction(curr_dir):
     return -1 if curr_dir == 1 else 1
 
+
 def toggle_rad_circle(curr_axe, curr_dir, curr_angle):
     out_axe = toggle_axe(curr_axe)
     out_dir = curr_dir
@@ -23,6 +25,7 @@ def toggle_rad_circle(curr_axe, curr_dir, curr_angle):
         if (curr_axe ==  const.X_AXE):
             out_dir = toggle_direction(curr_dir)
     return out_axe, out_dir
+
 
 def get_child_obj_location(obj):
     return obj.matrix_world.to_translation()
