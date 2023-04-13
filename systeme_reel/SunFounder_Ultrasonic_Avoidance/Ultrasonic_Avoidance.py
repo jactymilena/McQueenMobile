@@ -1,19 +1,8 @@
 #!/usr/bin/env python
-'''
-**********************************************************************
-* Filename    : Ultrasonic_Avoidance.py
-* Description : A module for SunFounder Ultrasonic Avoidance
-* Author      : Cavon
-* Brand       : SunFounder
-* E-mail      : service@sunfounder.com
-* Website     : www.sunfounder.com
-* Update      : Cavon    2016-09-26    New release
-**********************************************************************
-'''
 import time
 import RPi.GPIO as GPIO
-import constants as const
 
+import constants as const
 
 class Ultrasonic_Avoidance(object):
 	timeout = 0.05
@@ -21,6 +10,9 @@ class Ultrasonic_Avoidance(object):
 	def __init__(self, channel):
 		self.channel = channel
 		GPIO.setmode(GPIO.BCM)
+
+		self.last_measures = []
+		self.measures_index = 0
 
 
 	def distance(self):
@@ -48,15 +40,11 @@ class Ultrasonic_Avoidance(object):
 			pulse_duration = pulse_end - pulse_start
 			distance = pulse_duration * 100 * 343.0 /2
 			distance = int(distance)
-			#print('start = %s'%pulse_start,)
-			#print('end = %s'%pulse_end)
 			if distance >= 0:
 				return distance
 			else:
 				return -1
 		else :
-			#print('start = %s'%pulse_start,)
-			#print('end = %s'%pulse_end)
 			return -1
 
 
@@ -64,10 +52,9 @@ class Ultrasonic_Avoidance(object):
 		sum = 0
 		for i in range(mount):
 			a = self.distance()
-			#print('    %s' % a)
 			sum += a
 		return int(sum/mount)
-	
+
 
 	def less_than(self, alarm_gate):
 		dis = self.get_distance()
@@ -78,13 +65,31 @@ class Ultrasonic_Avoidance(object):
 			status = 0
 		else:
 			status = -1
-		#print('distance =',dis)
-		#print('status =',status)
 		return status
+	
+
+	def clear_measures(self):
+		self.last_measures[:] = []
 
 
 	def detect_obstacle(self):
-		return self.get_distance() <= const.SENSOR_CLOSE_RANGE
+		measure = self.get_distance()
+
+		self.measures_index += 1
+
+		if len(self.last_measures) >= 5:
+			index = (self.measures_index) % 5
+			print("index " + str(index) + " measures_index " +  str(self.measures_index))
+			self.last_measures[index] = measure
+		else:
+			self.last_measures.append(measure)
+			return False
+
+		measures_mean = sum(self.last_measures) / len(self.last_measures)
+
+		print("mean : " + str(measures_mean))
+		
+		return (measures_mean <= const.SENSOR_CLOSE_RANGE) #and not (test <= 2)
 
 
 def test():
@@ -93,6 +98,7 @@ def test():
 	while True:
 		distance = UA.get_distance()
 		status = UA.less_than(threshold)
+		print('distance', distance, 'cm')
 		if distance != -1:
 			print('distance', distance, 'cm')
 			time.sleep(0.2)
