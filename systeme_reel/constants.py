@@ -12,7 +12,7 @@ END_LINE = -1
 LEFT = -1
 RIGHT = 1
 
-# Personalizable constants 
+## --------------- Personalizable constants --------------- ##
 
 INITIAL_WAIT = 5
 SENSOR_READ_DELAY = 0.2
@@ -32,11 +32,12 @@ SENSOR_CLOSE_RANGE = 13
 # Line follower references 
 LINE_REFERENCES = [99, 118, 124, 129, 112] 
 LINE_STEP = [2, 7, 10, 20]
+LINE_OFF_TRACK_COUNT = 3
 
 # Intense virage angle
 TURNING_ANGLE = 40
 
-# Obstacle avoidance times
+# Obstacle avoidance 
 AVOIDANCE_TURN_TIME = 1
 AVOIDANCE_STRAIGHT_TIME_EX = 0.1
 AVOIDANCE_STRAIGHT_TIME_MID = 0.7
@@ -45,6 +46,9 @@ AVOIDANCE_RIGHT_ANGLE = 128
 AVOIDANCE_LEFT_ANGLE = 50
 
 AVOIDANCE_TURN_SPEED = 40
+
+AVOIDANCE_STOP_TIME = 2
+AVOIDANCE_BACKWARDS_DIST = 22
 
 # DRIFT
 DRIFT_MASTER_WHEEL_SPEED = 60

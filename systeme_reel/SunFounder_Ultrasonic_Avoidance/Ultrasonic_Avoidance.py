@@ -1,17 +1,7 @@
 #!/usr/bin/env python
-'''
-**********************************************************************
-* Filename    : Ultrasonic_Avoidance.py
-* Description : A module for SunFounder Ultrasonic Avoidance
-* Author      : Cavon
-* Brand       : SunFounder
-* E-mail      : service@sunfounder.com
-* Website     : www.sunfounder.com
-* Update      : Cavon    2016-09-26    New release
-**********************************************************************
-'''
 import time
 import RPi.GPIO as GPIO
+
 import constants as const
 
 class Ultrasonic_Avoidance(object):
@@ -50,15 +40,11 @@ class Ultrasonic_Avoidance(object):
 			pulse_duration = pulse_end - pulse_start
 			distance = pulse_duration * 100 * 343.0 /2
 			distance = int(distance)
-			#print('start = %s'%pulse_start,)
-			#print('end = %s'%pulse_end)
 			if distance >= 0:
 				return distance
 			else:
 				return -1
 		else :
-			#print('start = %s'%pulse_start,)
-			#print('end = %s'%pulse_end)
 			return -1
 
 
@@ -66,7 +52,6 @@ class Ultrasonic_Avoidance(object):
 		sum = 0
 		for i in range(mount):
 			a = self.distance()
-			#print('    %s' % a)
 			sum += a
 		return int(sum/mount)
 
@@ -80,8 +65,6 @@ class Ultrasonic_Avoidance(object):
 			status = 0
 		else:
 			status = -1
-		#print('distance =',dis)
-		#print('status =',status)
 		return status
 	
 
@@ -89,20 +72,10 @@ class Ultrasonic_Avoidance(object):
 		self.last_measures[:] = []
 
 
-	# def calibrate(self):
-	# 	for i in range(30):
-	# 		t = self.get_distance()
-	# 		time.sleep(0.2)
-
-
 	def detect_obstacle(self):
 		measure = self.get_distance()
 
 		self.measures_index += 1
-
-
-		# if measure + 10 < measures_mean || measure - 10 > measures_mean
-                # print('allo')
 
 		if len(self.last_measures) >= 5:
 			index = (self.measures_index) % 5
@@ -112,26 +85,10 @@ class Ultrasonic_Avoidance(object):
 			self.last_measures.append(measure)
 			return False
 
-			# if len(self.last_measures) < 5: 
-			# # self.last_measures.append(measure)
-			# 	return False
-
-
 		measures_mean = sum(self.last_measures) / len(self.last_measures)
-
-		# print(self.last_measures)
 
 		print("mean : " + str(measures_mean))
 		
-		
-		# print("distance " + str(measures_mean)  + " sensor_close_range " + str(const.SENSOR_CLOSE_RANGE)  + " " + str(int(measures_mean) < int(const.SENSOR_CLOSE_RANGE)) )
-
-		# for
-		# distances = [self.get_distance() for i in range(30)]
-		# for i in range(15):
-		# 	distances.append(self.get_distance())
-		# print(distances)
-
 		return (measures_mean <= const.SENSOR_CLOSE_RANGE) #and not (test <= 2)
 
 

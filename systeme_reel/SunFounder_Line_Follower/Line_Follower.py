@@ -29,7 +29,6 @@ class Line_Follower(object):
             return raw_result
         else:
             return False
-            print("Error accessing %2X" % self.address)
 
 
     def read_analog(self, trys=5):
@@ -111,13 +110,9 @@ class Line_Follower(object):
         lt_status_now = self.read_digital()
         turn_direction = 0 # 0 (no), 1 (right), -1 (left)
         
-
-
-        #if (lt_status_now == [1,1,1,1,1]) or (lt_status_now == [1,1,1,0,0]) or (lt_status_now == [0,0,1,1,1]):
         if sum(lt_status_now)  >= 3:
             return const.END_LINE, turn_direction, False
             
-
         turning_angle = 90
         print(lt_status_now)
         if  lt_status_now == [0,0,1,0,0]:
@@ -133,7 +128,6 @@ class Line_Follower(object):
 
         # Calculate direction
         if  lt_status_now == [0,0,1,0,0]:
-            # fw.turn(90)
             turning_angle = 90
             self.off_track_count = 0
             
@@ -156,7 +150,7 @@ class Line_Follower(object):
         else:
             turning_angle = 90
         
-        if self.off_track_count > 2:
+        if self.off_track_count >= const.LINE_OFF_TRACK_COUNT:
             turning_angle = 90 + (const.TURNING_ANGLE * self.last_direction)
             turn_direction = self.last_direction
         

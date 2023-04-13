@@ -43,22 +43,8 @@ class Car:
             self.bw.forward()
         time.sleep(sec)
         
-    
-    def turn_right(self, sec=2):
-        self.fw.turn_right()
-        self.bw.forward()
-        self.bw.speed = const.FORWARD_SPEED
-        time.sleep(sec)
-
-
-    def turn_left(self, sec=2): 
-        self.fw.turn_left()
-        self.bw.forward()
-        self.bw.speed = const.FORWARD_SPEED
-        time.sleep(sec)
-
         
-    def turn(self, angle):
+    def avoidance_turn(self, angle):
         self.is_acc = False
         self.fw.turn(angle)
         self.bw.forward()
@@ -80,23 +66,23 @@ class Car:
         virage_gauche = const.AVOIDANCE_LEFT_ANGLE
         
         # gauche
-        self.turn(virage_gauche)
+        self.avoidance_turn(virage_gauche)
         time.sleep(temps_gauche)
 
         # tout droit
-        self.turn(90)
+        self.avoidance_turn(90)
         time.sleep(const.AVOIDANCE_STRAIGHT_TIME_EX)
 
         # droite
-        self.turn(virage_droite)
+        self.avoidance_turn(virage_droite)
         time.sleep(temps_droite)
         
         # tout droit
-        self.turn(90)
+        self.avoidance_turn(90)
         time.sleep(const.AVOIDANCE_STRAIGHT_TIME_MID)
         
         # droite
-        self.turn(virage_droite)
+        self.avoidance_turn(virage_droite)
         time.sleep(const.AVOIDANCE_STRAIGHT_TIME_EX)
 
             
@@ -154,9 +140,8 @@ class Car:
         while True:
             if self.ua.detect_obstacle():
                 print("OBSTACLE DETECTED")
-                self.stop(2)
-                self.move_by_dist(20, backwards=True)
-                self.move(1, backwards=True, acc=False)
+                self.stop(const.AVOIDANCE_STOP_TIME)
+                self.move_by_dist(const.AVOIDANCE_BACKWARDS_DIST, backwards=True)
                 self.stop(1)
                 self.obstacle_avoidance()
                 self.ua.clear_measures()
@@ -166,20 +151,20 @@ class Car:
             turning_angle, turn_direction, is_off_track = self.lf.follow_line(const.LINE_STEP)
 
             if self.end_obs_avoidance and is_off_track:
+                # Just finished avoidance but hasnt find the line
                 self.bw.speed = const.FORWARD_SPEED
             else:
-                # Trajetory end
+                # Found the line or the end of the trajectory
+
                 if turning_angle == const.END_LINE:
                     print('Trajectory end')
                     self.stop()
                     break
-
+                
                 self.fw.turn(turning_angle)
                 self.end_obs_avoidance = False
                 
                 if turn_direction == const.LEFT: # if LEFT, left wheel slower
-                    print('-1 : turning left')
-                    
                     self.bw.right_speed(const.DRIFT_MASTER_WHEEL_SPEED)
                     self.bw.left_speed(const.DRIFT_PIVOT_WHEEL_SPEED)
                     self.turn_count += 1
@@ -188,7 +173,6 @@ class Car:
                         self.bw.left_forward(False)
                     
                 elif turn_direction == const.RIGHT: # if RIGHT, right wheel slower
-                    
                     self.bw.right_speed(const.DRIFT_PIVOT_WHEEL_SPEED)
                     self.bw.left_speed(const.DRIFT_MASTER_WHEEL_SPEED)
                     self.turn_count += 1
@@ -199,7 +183,6 @@ class Car:
                 else:
                     self.turn_count = 0
                     self.move(backwards=False, acc=True,decelerate=False)
-            
             
             if self.check_acceleration():
                 self.accelerate()
